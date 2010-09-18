@@ -28,6 +28,10 @@ CONSUMER_KEY = "hijuflqxoOqzLdtr6W4NA"
 
 # SoundCloud constants
 USER_AVATAR_URL = u'avatar_url'
+USER_PERMALINK = u'permalink'
+USER_ID = u'id'
+USER_NAME = u'username'
+USER_PERMALINK_URL = u'permalink_url'
 TRACK_USER = u'user'
 TRACK_TITLE = u'title'
 TRACK_ARTWORK_URL = u'artwork_url'
@@ -93,6 +97,10 @@ class SoundCloudClient(object):
         url = self.build_groups_query_url(resource_type="tracks", group_id=group_id, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
     
+    def get_user_tracks(self, offset, limit, mode, plugin_url, user_permalink):
+        url = self.build_users_query_url(resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_tracks(url)
+    
     def get_groups(self, offset, limit, mode, plugin_url, query=""):
         h = httplib2.Http()
         url = self.build_query_url(resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
@@ -111,6 +119,18 @@ class SoundCloudClient(object):
             
         return groups
     
+    def get_users(self, offset, limit, mode, plugin_url, query=""):
+        h = httplib2.Http()
+        url = self.build_query_url(resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        resp, content = h.request(url, 'GET')
+        json_content = json.loads(content)
+
+        users = []        
+        for json_entry in json_content:
+            users.append({ USER_NAME: json_entry[USER_NAME], USER_AVATAR_URL: json_entry[USER_AVATAR_URL], USER_ID: json_entry[USER_ID], USER_PERMALINK_URL: json_entry[USER_PERMALINK_URL], USER_PERMALINK: json_entry[USER_PERMALINK] })
+            
+        return users
+    
     def build_query_url(self, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%s%s.%s?%s' % (base, resource_type, format, str(urllib.urlencode(parameters)))
         return url
@@ -121,4 +141,8 @@ class SoundCloudClient(object):
     
     def build_groups_query_url(self, group_id, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%sgroups/%d/%s.%s?%s' % (base, group_id, resource_type, format, str(urllib.urlencode(parameters)))
+        return url
+    
+    def build_users_query_url(self, user_permalink, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
+        url = '%susers/%s/%s.%s?%s' % (base, user_permalink, resource_type, format, str(urllib.urlencode(parameters)))
         return url

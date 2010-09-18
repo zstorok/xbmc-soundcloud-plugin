@@ -31,18 +31,25 @@ PLUGIN_URL = 'plugin://music/SoundCloud/'
 
 # XBMC plugin modes
 MODE_GROUPS = 0
-MODE_TRACKS = 1
-MODE_ARTISTS = 2
-MODE_TRACKS_MENU = 3
-MODE_TRACKS_FAVORITES = 4
-MODE_TRACKS_SEARCH = 5
-MODE_TRACKS_HOTTEST = 6
-MODE_GROUPS_MENU = 7
-MODE_GROUPS_FAVORITES = 8
-MODE_GROUPS_SEARCH = 9
-MODE_GROUPS_HOTTEST = 10
-MODE_GROUPS_TRACKS = 11
-MODE_TRACK_PLAY = 12
+MODE_GROUPS_MENU = 1
+MODE_GROUPS_FAVORITES = 2
+MODE_GROUPS_SEARCH = 3
+MODE_GROUPS_HOTTEST = 4
+MODE_GROUPS_TRACKS = 5
+
+MODE_TRACKS = 10
+MODE_TRACKS_MENU = 11
+MODE_TRACKS_FAVORITES = 12
+MODE_TRACKS_SEARCH = 13
+MODE_TRACKS_HOTTEST = 14
+MODE_TRACK_PLAY = 15
+
+MODE_USERS = 20
+MODE_USERS_MENU = 21
+MODE_USERS_FAVORITES = 22
+MODE_USERS_SEARCH = 23
+MODE_USERS_HOTTEST = 24
+MODE_USERS_TRACKS = 25
 
 # Parameter keys
 PARAMETER_KEY_OFFSET = u'offset'
@@ -83,6 +90,11 @@ def show_tracks_menu():
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+    
+def show_users_menu():
+    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
+    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
+    xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups_menu():
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST}, isFolder=True)
@@ -111,8 +123,16 @@ def play_track(id):
     li.setInfo("music", { "title": track[client.TRACK_TITLE], "genre": track.get(client.TRACK_GENRE, "") })
     xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=li)
 
-def show_artists():
-    xbmcplugin.setContent(handle, "artists")
+def show_users(users, parameters):
+    for user in users:
+        li = xbmcgui.ListItem(label=user.get(client.USER_NAME, ""), thumbnailImage=user.get(client.USER_AVATAR_URL, ""))
+        user_parameters = {PARAMETER_KEY_MODE: MODE_USERS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "users/" + user[client.USER_PERMALINK], "user_permalink": user[client.USER_PERMALINK]}
+        url = sys.argv[0] + '?' + urllib.urlencode(user_parameters)
+        ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=True)
+    if not len(users) < parameters[PARAMETER_KEY_LIMIT]:
+        more_item_parameters = parameters.copy()
+        more_item_parameters[PARAMETER_KEY_OFFSET] = str(int(parameters[PARAMETER_KEY_OFFSET]) + int(parameters[PARAMETER_KEY_LIMIT]))
+        addDirectoryItem(name="More...", parameters=more_item_parameters, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups(groups, parameters):
@@ -148,7 +168,7 @@ def _show_keyboard(default="", heading="", hidden=False):
 def show_root_list():
     addDirectoryItem(name='Groups', parameters={ PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS}, isFolder=True)
     addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS}, isFolder=True)
-    addDirectoryItem(name='Artists', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'artists', PARAMETER_KEY_MODE: MODE_ARTISTS}, isFolder=True)
+    addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 ##################################################################
@@ -172,8 +192,8 @@ elif mode == MODE_GROUPS:
     ok = show_groups_menu()
 elif mode == MODE_TRACKS:
     ok = show_tracks_menu()
-elif mode == MODE_ARTISTS:
-    ok = show_artists()
+elif mode == MODE_USERS:
+    ok = show_users_menu()
 elif mode == MODE_TRACKS_SEARCH:
     if (not query):
         query = _show_keyboard()
@@ -192,6 +212,17 @@ elif mode == MODE_GROUPS_HOTTEST:
     ok = show_groups(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, groups=groups)
 elif mode == MODE_GROUPS_TRACKS:
     tracks = soundcloud_client.get_group_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, int(params.get("group_id", "1")))
+    ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
+elif mode == MODE_USERS_SEARCH:
+    if (not query):
+        query = _show_keyboard()
+    users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, query)
+    ok = show_users(users=users, parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url, "q":query})
+elif mode == MODE_USERS_HOTTEST:
+    users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
+elif mode == MODE_USERS_TRACKS:
+    tracks = soundcloud_client.get_user_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, params.get("user_permalink"))
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
 elif mode == MODE_TRACK_PLAY:
     play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))
