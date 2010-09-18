@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
 	Copyright 2010 Zsolt Török
 	 
@@ -13,8 +14,6 @@
 	See the License for the specific language governing permissions and 
 	limitations under the License. 
 -->
-
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.soundcloud"
        name="SoundCloud"
        version="0.1.0"
