@@ -58,50 +58,40 @@ PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
 
-REMOTE_DBG = False
 handle = int(sys.argv[1])
 soundcloud_client = SoundCloudClient()
 
-# append pydev remote debugger
-def init_debugger():
-    if REMOTE_DBG:
-        # Make pydev debugger works for auto reload.
-        # Note pydevd module need to be copied in XBMC\system\python\Lib\pysrc
-        try:
-            import pysrc.pydevd as pydevd
-        # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
-            pydevd.settrace('localhost', stdoutToServer=True, stderrToServer=True)
-        except ImportError:
-            sys.stderr.write("Error: " +
-                "You must add org.python.pydev.debug.pysrc to your PYTHONPATH.")
-            sys.exit(1)
-
-# Actual XBMC code
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
-    liz = xbmcgui.ListItem(name, label2)
+    ''' Add a list item to the XBMC UI.'''
+    li = xbmcgui.ListItem(name, label2)
     if not infoLabels:
         infoLabels = {"Title": name }
 
-    liz.setInfo(infoType, infoLabels)
+    li.setInfo(infoType, infoLabels)
     url = sys.argv[0] + '?' + urllib.urlencode(parameters)
-    return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=liz, isFolder=isFolder)
+    return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)
 
 def show_tracks_menu():
+    ''' Show the Tracks menu. '''
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
-    
+
 def show_users_menu():
+    ''' Show the Users menu. '''
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups_menu():
+    ''' Show the Groups menu. '''
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/search", PARAMETER_KEY_MODE: MODE_GROUPS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_tracks(tracks, parameters={}):
+    ''' Show a list of tracks. A 'More...' item is added, 
+        if there are more items available, then what is currently listed. '''
     xbmcplugin.setContent(handle, "songs")
     for track in tracks:
         li = xbmcgui.ListItem(label=track[client.TRACK_TITLE], thumbnailImage=track[client.TRACK_ARTWORK_URL])
@@ -118,12 +108,15 @@ def show_tracks(tracks, parameters={}):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def play_track(id):
+    ''' Start to stream the track with the given id. '''
     track = soundcloud_client.get_track(id)
     li = xbmcgui.ListItem(label=track[client.TRACK_TITLE], thumbnailImage=track.get(client.TRACK_ARTWORK_URL, ""), path=track[client.TRACK_STREAM_URL])
     li.setInfo("music", { "title": track[client.TRACK_TITLE], "genre": track.get(client.TRACK_GENRE, "") })
     xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=li)
 
 def show_users(users, parameters):
+    ''' Show a list of users. A 'More...' item is added, 
+        if there are more items available, then what is currently listed. '''
     for user in users:
         li = xbmcgui.ListItem(label=user.get(client.USER_NAME, ""), thumbnailImage=user.get(client.USER_AVATAR_URL, ""))
         user_parameters = {PARAMETER_KEY_MODE: MODE_USERS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "users/" + user[client.USER_PERMALINK], "user_permalink": user[client.USER_PERMALINK]}
@@ -136,6 +129,8 @@ def show_users(users, parameters):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups(groups, parameters):
+    ''' Show a list of groups. A 'More...' item is added, 
+        if there are more items available, then what is currently listed. '''
     for group in groups:
         li = xbmcgui.ListItem(label=group.get(client.GROUP_NAME, ""), thumbnailImage=group.get(client.GROUP_ARTWORK_URL, ""))
         group_parameters = {PARAMETER_KEY_MODE: MODE_GROUPS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "groups/" + group[client.GROUP_PERMALINK], "group_id": group[client.GROUP_ID]}
@@ -148,6 +143,7 @@ def show_groups(groups, parameters):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def parameters_string_to_dict(parameters):
+    ''' Convert parameters encoded in a URL to a dict. '''
     paramDict = {}
     if parameters:
         paramPairs = parameters[1:].split("&")
@@ -158,14 +154,15 @@ def parameters_string_to_dict(parameters):
     return paramDict
 
 def _show_keyboard(default="", heading="", hidden=False):
-    """ shows a keyboard and returns a value """
+    ''' Show the keyboard and return the text entered. '''
     keyboard = xbmc.Keyboard(default, heading, hidden)
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         return unicode(keyboard.getText(), "utf-8")
     return default
 
-def show_root_list():
+def show_root_menu():
+    ''' Show the plugin root menu. '''
     addDirectoryItem(name='Groups', parameters={ PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS}, isFolder=True)
     addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS}, isFolder=True)
     addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS}, isFolder=True)
@@ -173,7 +170,6 @@ def show_root_list():
 
 ##################################################################
 
-init_debugger()
 params = parameters_string_to_dict(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
@@ -185,9 +181,10 @@ print("URL: %s" % url)
 print("Name: %s" % name)
 print "##########################################################"
 
+# Depending on the mode, call the appropriate function to build the UI.
 if not sys.argv[ 2 ] or not url:
     # new start
-    ok = show_root_list()
+    ok = show_root_menu()
 elif mode == MODE_GROUPS:
     ok = show_groups_menu()
 elif mode == MODE_TRACKS:

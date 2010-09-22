@@ -5,7 +5,7 @@ About
 -----
 The XBMC SoundCloud Plugin integrates music from [SoundCloud] [2] right into your XBMC media center. 
 
-In the current version (0.1.0) it supports browsing and searching both individual tracks and groups, 
+In the current version (0.1.0) it supports browsing and searching individual tracks, users and groups, 
 and provides access to publicly available resources only. User authentication and access to private 
 resources like favorites and private tracks are planned for future releases.
 
