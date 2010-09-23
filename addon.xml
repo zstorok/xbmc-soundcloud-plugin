@@ -1,22 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!--
-	Copyright 2010 Zsolt Török
-	 
-	Licensed under the Apache License, Version 2.0 (the "License"); 
-	you may not use this file except in compliance with the License. 
-	You may obtain a copy of the License at 
-	
-	    http://www.apache.org/licenses/LICENSE-2.0 
-	
-	Unless required by applicable law or agreed to in writing, software 
-	distributed under the License is distributed on an "AS IS" BASIS, 
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-	See the License for the specific language governing permissions and 
-	limitations under the License. 
--->
 <addon id="plugin.audio.soundcloud"
        name="SoundCloud"
-       version="0.1.0"
+       version="0.1.1"
        provider-name="Zsolt Török">
   <requires>
     <import addon="xbmc.python" version="1.0"/>
@@ -27,7 +12,7 @@
   </extension>
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
-    <summary lang="en">SoundCloud</summary>
-    <description lang="en">Music plugin for browsing and playing content from SoundCloud, a community website for sharing music, used by both professionals and enthusiasts.</description>
+    <summary lang="en">Listen to music from SoundCloud, the online audio distribution service.</summary>
+    <description lang="en">SoundCloud is a platform for musicians to promote and distribute their music online.</description>
   </extension>
 </addon>
