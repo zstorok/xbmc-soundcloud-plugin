@@ -27,6 +27,10 @@ import simplejson as json
 # SoundCloud application consumer key.
 CONSUMER_KEY = "hijuflqxoOqzLdtr6W4NA"
 
+# SoundCloud OAuth 2
+CLIENT_ID = CONSUMER_KEY
+CLIENT_SECRET = "R2yWd6rMqvkoCWIgsJ8187kqt5WPusKib0nKXbx1MI"
+
 # SoundCloud constants
 USER_AVATAR_URL = u'avatar_url'
 USER_PERMALINK = u'permalink'
@@ -54,6 +58,7 @@ QUERY_OFFSET = u'offset'
 QUERY_LIMIT = u'limit'
 QUERY_Q = u'q'
 QUERY_ORDER = u'order'
+QUERY_OAUTH_TOKEN = u'oauth_token'
 
 class SoundCloudClient(object):
     ''' SoundCloud client to handle all comminucation with the SoundCloud REST API. '''
@@ -109,6 +114,11 @@ class SoundCloudClient(object):
         ''' Return a list of tracks uploaded by the given user, based on the specified parameters. '''
         url = self.build_users_query_url(resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
+    
+    def get_favorite_tracks(self, offset, limit, mode, plugin_url):
+        ''' Return a list of tracks favorited by the current user, based on the specified parameters. '''
+        url = self.build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: "0000000pVsNXj5kEEuyFlf48mJQug25h", QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_tracks(url)
 
     def get_groups(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of groups, based on the specified parameters. '''
@@ -144,6 +154,7 @@ class SoundCloudClient(object):
 
     def build_query_url(self, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%s%s.%s?%s' % (base, resource_type, format, str(urllib.urlencode(parameters)))
+        print url
         return url
 
     def build_track_query_url(self, permalink, parameters, base="http://api.soundcloud.com/", format="json"):
