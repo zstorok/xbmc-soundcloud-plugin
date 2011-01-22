@@ -22,7 +22,7 @@ along with XBMC SoundCloud Plugin.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 import sys
-import xbmc, xbmcgui, xbmcplugin
+import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 import xbmcsc.client as client
 import urllib
 from xbmcsc.client import SoundCloudClient
@@ -60,6 +60,11 @@ PARAMETER_KEY_LIMIT = u'limit'
 PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
+
+# Plugin settings
+SETTING_USERNAME = u'username'
+SETTING_PASSWORD = u'password'
+SETTING_LOGIN = u'login_to_soundcloud'
 
 handle = int(sys.argv[1])
 soundcloud_client = SoundCloudClient()
@@ -176,6 +181,13 @@ def show_root_menu():
 
 ##################################################################
 
+# Read settings, show settings dialog if necessary
+username = xbmcplugin.getSetting(handle, SETTING_USERNAME)
+password = xbmcplugin.getSetting(handle, SETTING_PASSWORD)
+login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
+if login=="true" and (not username or not password):
+    xbmcaddon.Addon(id="plugin.audio.soundcloud").openSettings()
+
 params = parameters_string_to_dict(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
@@ -185,6 +197,7 @@ print "##########################################################"
 print("Mode: %s" % mode)
 print("URL: %s" % url)
 print("Name: %s" % name)
+print(username, password)
 print "##########################################################"
 
 # Depending on the mode, call the appropriate function to build the UI.
