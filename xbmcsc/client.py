@@ -30,6 +30,7 @@ CONSUMER_KEY = "hijuflqxoOqzLdtr6W4NA"
 # SoundCloud OAuth 2
 CLIENT_ID = CONSUMER_KEY
 CLIENT_SECRET = "R2yWd6rMqvkoCWIgsJ8187kqt5WPusKib0nKXbx1MI"
+OAUTH_TOKEN = "0000000pVsNXj5kEEuyFlf48mJQug25h"
 
 # SoundCloud constants
 USER_AVATAR_URL = u'avatar_url'
@@ -117,7 +118,7 @@ class SoundCloudClient(object):
     
     def get_favorite_tracks(self, offset, limit, mode, plugin_url):
         ''' Return a list of tracks favorited by the current user, based on the specified parameters. '''
-        url = self.build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: "0000000pVsNXj5kEEuyFlf48mJQug25h", QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        url = self.build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: OAUTH_TOKEN, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
 
     def get_groups(self, offset, limit, mode, plugin_url, query=""):
@@ -139,10 +140,21 @@ class SoundCloudClient(object):
 
         return groups
 
-    def get_users(self, offset, limit, mode, plugin_url, query=""):
+    def get_users(self, offset, limit, mode, plugin_url, query):
+        url = self.build_query_url(resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+
+    def get_following_users(self, offset, limit, mode, plugin_url):
+        url = self.build_query_url(base="https://api.soundcloud.com/", resource_type="me/followings", parameters={ QUERY_OAUTH_TOKEN : OAUTH_TOKEN, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+        
+    def get_follower_users(self, offset, limit, mode, plugin_url):
+        url = self.build_query_url(base="https://api.soundcloud.com/", resource_type="me/followers", parameters={ QUERY_OAUTH_TOKEN : OAUTH_TOKEN, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+
+    def _get_users(self, url):
         ''' Return a list of users, based on the specified parameters. '''
         h = httplib2.Http()
-        url = self.build_query_url(resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
         resp, content = h.request(url, 'GET')
         json_content = json.loads(content)
 

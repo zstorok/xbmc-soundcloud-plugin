@@ -51,6 +51,8 @@ MODE_USERS_FAVORITES = 22
 MODE_USERS_SEARCH = 23
 MODE_USERS_HOTTEST = 24
 MODE_USERS_TRACKS = 25
+MODE_USERS_FOLLOWINGS = 26
+MODE_USERS_FOLLOWERS = 27
 
 # Parameter keys
 PARAMETER_KEY_OFFSET = u'offset'
@@ -74,12 +76,15 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
 
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
+    addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_users_menu():
     ''' Show the Users menu. '''
+    addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS}, isFolder=True)
+    addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -164,7 +169,6 @@ def _show_keyboard(default="", heading="", hidden=False):
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
-    addDirectoryItem(name='Favorites', parameters={ PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
     addDirectoryItem(name='Groups', parameters={ PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS}, isFolder=True)
     addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS}, isFolder=True)
     addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS}, isFolder=True)
@@ -220,6 +224,15 @@ elif mode == MODE_USERS_SEARCH:
         query = _show_keyboard()
     users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, query)
     ok = show_users(users=users, parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url, "q":query})
+elif mode == MODE_USERS_HOTTEST:
+    users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
+elif mode == MODE_USERS_FOLLOWINGS:
+    users = soundcloud_client.get_following_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
+elif mode == MODE_USERS_FOLLOWERS:
+    users = soundcloud_client.get_follower_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
 elif mode == MODE_USERS_HOTTEST:
     users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
