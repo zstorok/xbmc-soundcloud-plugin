@@ -60,6 +60,7 @@ PARAMETER_KEY_LIMIT = u'limit'
 PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
+PARAMETER_KEY_OAUTH_TOKEN = u'oauth_token'
 
 # Plugin settings
 SETTING_USERNAME = u'username'
@@ -187,12 +188,18 @@ password = xbmcplugin.getSetting(handle, SETTING_PASSWORD)
 login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
 if login=="true" and (not username or not password):
     xbmcaddon.Addon(id="plugin.audio.soundcloud").openSettings()
+    
+access_token, refresh_token = soundcloud_client.get_oauth_tokens(username, password)
+print (access_token, refresh_token)
+access_token, refresh_token = soundcloud_client.refresh_oauth_token(refresh_token)
+print (access_token, refresh_token)
 
 params = parameters_string_to_dict(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
 mode = int(params.get(PARAMETER_KEY_MODE, "0"))
 query = urllib.unquote_plus(params.get("q", ""))
+oauth_token = urllib.unquote_plus(params.get(PARAMETER_KEY_OAUTH_TOKEN, ""))
 print "##########################################################"
 print("Mode: %s" % mode)
 print("URL: %s" % url)

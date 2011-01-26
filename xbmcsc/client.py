@@ -28,9 +28,17 @@ import simplejson as json
 CONSUMER_KEY = "hijuflqxoOqzLdtr6W4NA"
 
 # SoundCloud OAuth 2
-CLIENT_ID = CONSUMER_KEY
-CLIENT_SECRET = "R2yWd6rMqvkoCWIgsJ8187kqt5WPusKib0nKXbx1MI"
+CLIENT_ID_VALUE = CONSUMER_KEY
+CLIENT_SECRET_VALUE = "R2yWd6rMqvkoCWIgsJ8187kqt5WPusKib0nKXbx1MI"
+GRANT_TYPE_PASSWORD_VALUE = u'password'
+GRANT_TYPE_REFRESH_TOKEN_VALUE = u'refresh_token'
 OAUTH_TOKEN = "0000000pVsNXj5kEEuyFlf48mJQug25h"
+CLIENT_ID_KEY = u'client_id'
+CLIENT_SECRET_KEY = u'client_secret'
+GRANT_TYPE_KEY = u'grant_type'
+USERNAME_KEY = u'username'
+PASSWORD_KEY = u'password'
+REFRESH_TOKEN_KEY = u'refresh_token'
 
 # SoundCloud constants
 USER_AVATAR_URL = u'avatar_url'
@@ -69,6 +77,26 @@ class SoundCloudClient(object):
         Constructor
         '''
         print 'SCC init'
+        
+    def get_oauth_tokens(self, username, password):
+        ''' Authenticates with SoundCloud using the given credentials and returns an OAuth access token and a refresh token.'''
+        url = 'https://api.soundcloud.com/oauth2/token?' + urllib.urlencode({CLIENT_ID_KEY : CLIENT_ID_VALUE, CLIENT_SECRET_KEY : CLIENT_SECRET_VALUE, GRANT_TYPE_KEY : GRANT_TYPE_PASSWORD_VALUE, USERNAME_KEY : username, PASSWORD_KEY : password})
+        h = httplib2.Http()
+        resp, content = h.request(url, 'POST')
+        json_content = json.loads(content)
+        oauth_access_token = json_content.get('access_token')
+        oauth_refresh_token = json_content.get('refresh_token')
+        return oauth_access_token, oauth_refresh_token
+        
+    def refresh_oauth_token(self, oauth_refresh_token):
+        ''' Uses a refresh token to get a new OAuth access and refresh token from the SoundCloud server.''' 
+        url = 'https://api.soundcloud.com/oauth2/token?' + urllib.urlencode({CLIENT_ID_KEY : CLIENT_ID_VALUE, CLIENT_SECRET_KEY : CLIENT_SECRET_VALUE, GRANT_TYPE_KEY : GRANT_TYPE_REFRESH_TOKEN_VALUE, REFRESH_TOKEN_KEY : oauth_refresh_token})
+        h = httplib2.Http()
+        resp, content = h.request(url, 'POST')
+        json_content = json.loads(content)
+        oauth_access_token = json_content.get('access_token')
+        oauth_refresh_token = json_content.get('refresh_token')
+        return oauth_access_token, oauth_refresh_token
 
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of tracks from SoundCloud, based on the parameters. '''
