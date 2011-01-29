@@ -28,7 +28,8 @@ import urllib
 from xbmcsc.client import SoundCloudClient
 
 # plugin related constants
-PLUGIN_URL = 'plugin://music/SoundCloud/'
+PLUGIN_URL = u'plugin://music/SoundCloud/'
+PLUGIN_ID = u'plugin.audio.soundcloud'
 
 # XBMC plugin modes
 MODE_GROUPS = 0
@@ -61,14 +62,41 @@ PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
 PARAMETER_KEY_OAUTH_TOKEN = u'oauth_token'
+PARAMETER_KEY_OAUTH_REFRESH_TOKEN = u'oauth_refresh_token'
 
 # Plugin settings
 SETTING_USERNAME = u'username'
 SETTING_PASSWORD = u'password'
 SETTING_LOGIN = u'login_to_soundcloud'
 
+def _parameters_string_to_dict(parameters):
+    ''' Convert parameters encoded in a URL to a dict. '''
+    paramDict = {}
+    if parameters:
+        paramPairs = parameters[1:].split("&")
+        for paramsPair in paramPairs:
+            paramSplits = paramsPair.split('=')
+            if (len(paramSplits)) == 2:
+                paramDict[paramSplits[0]] = paramSplits[1]
+    return paramDict
+
+params = _parameters_string_to_dict(sys.argv[2])
+url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
+name = urllib.unquote_plus(params.get("name", ""))
+mode = int(params.get(PARAMETER_KEY_MODE, "0"))
+query = urllib.unquote_plus(params.get("q", ""))
+oauth_token = urllib.unquote_plus(params.get(PARAMETER_KEY_OAUTH_TOKEN, ""))
+oauth_refresh_token = urllib.unquote_plus(params.get(PARAMETER_KEY_OAUTH_REFRESH_TOKEN, ""))
+
+# Read settings, show settings dialog if necessary
 handle = int(sys.argv[1])
-soundcloud_client = SoundCloudClient()
+username = xbmcplugin.getSetting(handle, SETTING_USERNAME)
+password = xbmcplugin.getSetting(handle, SETTING_PASSWORD)
+login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
+if login=="true" and (not username or not password):
+    xbmcaddon.Addon(id=PLUGIN_ID).openSettings()
+    
+soundcloud_client = SoundCloudClient(login, username, password, oauth_token, oauth_refresh_token)
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
     ''' Add a list item to the XBMC UI.'''
@@ -82,15 +110,17 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
 
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
-    addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
+    if login == 'true':
+        addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_users_menu():
     ''' Show the Users menu. '''
-    addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS}, isFolder=True)
-    addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS}, isFolder=True)
+    if login == 'true':
+        addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS}, isFolder=True)
+        addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -154,17 +184,6 @@ def show_groups(groups, parameters):
         addDirectoryItem(name="More...", parameters=more_item_parameters, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
-def parameters_string_to_dict(parameters):
-    ''' Convert parameters encoded in a URL to a dict. '''
-    paramDict = {}
-    if parameters:
-        paramPairs = parameters[1:].split("&")
-        for paramsPair in paramPairs:
-            paramSplits = paramsPair.split('=')
-            if (len(paramSplits)) == 2:
-                paramDict[paramSplits[0]] = paramSplits[1]
-    return paramDict
-
 def _show_keyboard(default="", heading="", hidden=False):
     ''' Show the keyboard and return the text entered. '''
     keyboard = xbmc.Keyboard(default, heading, hidden)
@@ -181,31 +200,6 @@ def show_root_menu():
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 ##################################################################
-
-# Read settings, show settings dialog if necessary
-username = xbmcplugin.getSetting(handle, SETTING_USERNAME)
-password = xbmcplugin.getSetting(handle, SETTING_PASSWORD)
-login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
-if login=="true" and (not username or not password):
-    xbmcaddon.Addon(id="plugin.audio.soundcloud").openSettings()
-    
-access_token, refresh_token = soundcloud_client.get_oauth_tokens(username, password)
-print (access_token, refresh_token)
-access_token, refresh_token = soundcloud_client.refresh_oauth_token(refresh_token)
-print (access_token, refresh_token)
-
-params = parameters_string_to_dict(sys.argv[2])
-url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
-name = urllib.unquote_plus(params.get("name", ""))
-mode = int(params.get(PARAMETER_KEY_MODE, "0"))
-query = urllib.unquote_plus(params.get("q", ""))
-oauth_token = urllib.unquote_plus(params.get(PARAMETER_KEY_OAUTH_TOKEN, ""))
-print "##########################################################"
-print("Mode: %s" % mode)
-print("URL: %s" % url)
-print("Name: %s" % name)
-print(username, password)
-print "##########################################################"
 
 # Depending on the mode, call the appropriate function to build the UI.
 if not sys.argv[ 2 ] or not url:
