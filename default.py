@@ -96,9 +96,13 @@ url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
 mode = int(params.get(PARAMETER_KEY_MODE, "0"))
 query = urllib.unquote_plus(params.get("q", ""))
-oauth_token = "1-13681-775815-3ef6187f958bf5388"
-# Read settings, show settings dialog if necessary
+
+
 handle = int(sys.argv[1])
+
+# Get OAUTH TOKEN VIA SOUNCLOUD CONNECT
+# https://soundcloud.com/connect?client_id=91c61ef4dbc96933eff93325b5d5183e&response_type=token&redirect_uri=http://www.google.be&scope=non-expiring
+# oauth_token = ""
 login = "true"
     
 soundcloud_client = SoundCloudClient(login, oauth_token)
