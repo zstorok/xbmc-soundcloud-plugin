@@ -22,13 +22,30 @@ along with XBMC SoundCloud Plugin.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 import sys
-import xbmc, xbmcgui, xbmcplugin
+import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 import xbmcsc.client as client
 import urllib
 from xbmcsc.client import SoundCloudClient
 
+
+REMOTE_DBG = False 
+
+# append pydev remote debugger
+if REMOTE_DBG:
+    # Make pydev debugger works for auto reload.
+    # Note pydevd module need to be copied in XBMC\system\python\Lib\pysrc
+    try:
+        import pysrc.pydevd as pydevd
+    # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
+        pydevd.settrace('localhost', stdoutToServer=True, stderrToServer=True)
+    except ImportError:
+        sys.stderr.write("Error: " +
+            "You must add org.python.pydev.debug.pysrc to your PYTHONPATH.")
+        sys.exit(1)
+        
 # plugin related constants
-PLUGIN_URL = 'plugin://music/SoundCloud/'
+PLUGIN_URL = u'plugin://music/SoundCloud/'
+PLUGIN_ID = u'plugin.audio.soundcloud'
 
 # XBMC plugin modes
 MODE_GROUPS = 0
@@ -51,6 +68,8 @@ MODE_USERS_FAVORITES = 22
 MODE_USERS_SEARCH = 23
 MODE_USERS_HOTTEST = 24
 MODE_USERS_TRACKS = 25
+MODE_USERS_FOLLOWINGS = 26
+MODE_USERS_FOLLOWERS = 27
 
 # Parameter keys
 PARAMETER_KEY_OFFSET = u'offset'
@@ -59,8 +78,30 @@ PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
 
+# Plugin settings
+
+def _parameters_string_to_dict(parameters):
+    ''' Convert parameters encoded in a URL to a dict. '''
+    paramDict = {}
+    if parameters:
+        paramPairs = parameters[1:].split("&")
+        for paramsPair in paramPairs:
+            paramSplits = paramsPair.split('=')
+            if (len(paramSplits)) == 2:
+                paramDict[paramSplits[0]] = paramSplits[1]
+    return paramDict
+
+params = _parameters_string_to_dict(sys.argv[2])
+url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
+name = urllib.unquote_plus(params.get("name", ""))
+mode = int(params.get(PARAMETER_KEY_MODE, "0"))
+query = urllib.unquote_plus(params.get("q", ""))
+oauth_token = "1-13681-775815-3ef6187f958bf5388"
+# Read settings, show settings dialog if necessary
 handle = int(sys.argv[1])
-soundcloud_client = SoundCloudClient()
+login = "true"
+    
+soundcloud_client = SoundCloudClient(login, oauth_token)
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
     ''' Add a list item to the XBMC UI.'''
@@ -74,12 +115,17 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
 
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
+    if login == 'true':
+        addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_users_menu():
     ''' Show the Users menu. '''
+    if login == 'true':
+        addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS}, isFolder=True)
+        addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -99,8 +145,10 @@ def show_tracks(tracks, parameters={}):
         li.setInfo("music", { "title": track[client.TRACK_TITLE], "genre": track.get(client.TRACK_GENRE, "") })
         li.setProperty("mimetype", 'audio/mpeg')
         li.setProperty("IsPlayable", "true")
-        track_parameters = { PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + track[client.TRACK_PERMALINK], "permalink": track[client.TRACK_PERMALINK] }
+        trackid = str(track[client.TRACK_ID])
+        track_parameters = { PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + trackid, "permalink": trackid }
         url = sys.argv[0] + '?' + urllib.urlencode(track_parameters)
+        #url = track['stream_url']
         ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=False)
     if not len(tracks) < parameters[PARAMETER_KEY_LIMIT]:
         modified_parameters = parameters.copy()
@@ -114,6 +162,7 @@ def play_track(id):
     li = xbmcgui.ListItem(label=track[client.TRACK_TITLE], thumbnailImage=track.get(client.TRACK_ARTWORK_URL, ""), path=track[client.TRACK_STREAM_URL])
     li.setInfo("music", { "title": track[client.TRACK_TITLE], "genre": track.get(client.TRACK_GENRE, "") })
     xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=li)
+    
 
 def show_users(users, parameters):
     ''' Show a list of users. A 'More...' item is added, 
@@ -143,17 +192,6 @@ def show_groups(groups, parameters):
         addDirectoryItem(name="More...", parameters=more_item_parameters, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
-def parameters_string_to_dict(parameters):
-    ''' Convert parameters encoded in a URL to a dict. '''
-    paramDict = {}
-    if parameters:
-        paramPairs = parameters[1:].split("&")
-        for paramsPair in paramPairs:
-            paramSplits = paramsPair.split('=')
-            if (len(paramSplits)) == 2:
-                paramDict[paramSplits[0]] = paramSplits[1]
-    return paramDict
-
 def _show_keyboard(default="", heading="", hidden=False):
     ''' Show the keyboard and return the text entered. '''
     keyboard = xbmc.Keyboard(default, heading, hidden)
@@ -170,17 +208,6 @@ def show_root_menu():
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 ##################################################################
-
-params = parameters_string_to_dict(sys.argv[2])
-url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
-name = urllib.unquote_plus(params.get("name", ""))
-mode = int(params.get(PARAMETER_KEY_MODE, "0"))
-query = urllib.unquote_plus(params.get("q", ""))
-print "##########################################################"
-print("Mode: %s" % mode)
-print("URL: %s" % url)
-print("Name: %s" % name)
-print "##########################################################"
 
 # Depending on the mode, call the appropriate function to build the UI.
 if not sys.argv[ 2 ] or not url:
@@ -200,6 +227,9 @@ elif mode == MODE_TRACKS_SEARCH:
 elif mode == MODE_TRACKS_HOTTEST:
     tracks = soundcloud_client.get_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
+elif mode == MODE_TRACKS_FAVORITES:
+    tracks = soundcloud_client.get_favorite_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
 elif mode == MODE_GROUPS_SEARCH:
     if (not query):
         query = _show_keyboard()
@@ -216,6 +246,15 @@ elif mode == MODE_USERS_SEARCH:
         query = _show_keyboard()
     users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, query)
     ok = show_users(users=users, parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url, "q":query})
+elif mode == MODE_USERS_HOTTEST:
+    users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
+elif mode == MODE_USERS_FOLLOWINGS:
+    users = soundcloud_client.get_following_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
+elif mode == MODE_USERS_FOLLOWERS:
+    users = soundcloud_client.get_follower_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
 elif mode == MODE_USERS_HOTTEST:
     users = soundcloud_client.get_users(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_users(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, users=users)
