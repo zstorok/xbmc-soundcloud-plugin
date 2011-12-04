@@ -6,7 +6,7 @@ About
 The XBMC SoundCloud Plugin integrates music from [SoundCloud] [2] right into your XBMC media center. 
 
 In the current version it supports browsing public tracks, users and groups.
-It also supports basic login (no facebook authentication) for vieuwing your favorites ...
+It also supports basic login (no facebook authentication) for viewing your favorites ...
 
 Third-party Libraries
 ---------------------
