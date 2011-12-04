@@ -27,7 +27,7 @@ import xbmcsc.client as client
 import urllib
 from xbmcsc.client import SoundCloudClient
 
-
+loginerror = False
 REMOTE_DBG = False
 
 # append pydev remote debugger
@@ -118,7 +118,9 @@ if oauth_token=="":
     
 if login=="true" and oauth_token=="":
     #error login failed
-    login="false"        
+    login="false"
+    loginerror="true"
+   
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
     ''' Add a list item to the XBMC UI.'''
@@ -223,7 +225,6 @@ def show_root_menu():
     addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
-
 ##################################################################
 
 # Depending on the mode, call the appropriate function to build the UI.
@@ -280,3 +281,7 @@ elif mode == MODE_USERS_TRACKS:
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
 elif mode == MODE_TRACK_PLAY:
     play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))
+    
+if loginerror=="true":
+    xbmc.executebuiltin("Notification(%s,%s,%i)" % ("warning", "Login Failed, Change & Reboot XBMC", 5000))
+    
