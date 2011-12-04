@@ -84,9 +84,6 @@ SETTING_USERNAME = u'username'
 SETTING_PASSWORD = u'password'
 SETTING_LOGIN = u'login_to_soundcloud'
 
-def getSoundCloudToken():
-    return ""
-    #return "1-13681-775815-3ef6187f958bf5388"
 
 def _parameters_string_to_dict(parameters):
     ''' Convert parameters encoded in a URL to a dict. '''
@@ -114,14 +111,14 @@ login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
 if login=="true" and (not username or not password):
     xbmcaddon.Addon(id=PLUGIN_ID).openSettings()
 
-if login=="true" and oauth_token=="":
-    oauth_token = getSoundCloudToken()
+soundcloud_client = SoundCloudClient(login, username, password, oauth_token)
+
+if oauth_token=="":
+    oauth_token = soundcloud_client.oauth_token
+    
 if login=="true" and oauth_token=="":
     #error login failed
     login="false"        
-soundcloud_client = SoundCloudClient(login, oauth_token)
-
-
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
     ''' Add a list item to the XBMC UI.'''
