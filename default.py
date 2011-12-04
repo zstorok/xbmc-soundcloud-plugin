@@ -28,7 +28,7 @@ import urllib
 from xbmcsc.client import SoundCloudClient
 
 
-REMOTE_DBG = False 
+REMOTE_DBG = False
 
 # append pydev remote debugger
 if REMOTE_DBG:
@@ -77,8 +77,16 @@ PARAMETER_KEY_LIMIT = u'limit'
 PARAMETER_KEY_MODE = u'mode'
 PARAMETER_KEY_URL = u'url'
 PARAMETER_KEY_PERMALINK = u'permalink'
+PARAMETER_KEY_TOKEN = u'oauth_token'
 
 # Plugin settings
+SETTING_USERNAME = u'username'
+SETTING_PASSWORD = u'password'
+SETTING_LOGIN = u'login_to_soundcloud'
+
+def getSoundCloudToken():
+    return ""
+    #return "1-13681-775815-3ef6187f958bf5388"
 
 def _parameters_string_to_dict(parameters):
     ''' Convert parameters encoded in a URL to a dict. '''
@@ -96,16 +104,24 @@ url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
 mode = int(params.get(PARAMETER_KEY_MODE, "0"))
 query = urllib.unquote_plus(params.get("q", ""))
-
+oauth_token = urllib.unquote_plus(params.get(PARAMETER_KEY_TOKEN,""))
 
 handle = int(sys.argv[1])
 
-# Get OAUTH TOKEN VIA SOUNCLOUD CONNECT
-# https://soundcloud.com/connect?client_id=91c61ef4dbc96933eff93325b5d5183e&response_type=token&redirect_uri=http://www.google.be&scope=non-expiring
-# oauth_token = ""
-login = "true"
-    
+username = xbmcplugin.getSetting(handle, SETTING_USERNAME)
+password = xbmcplugin.getSetting(handle, SETTING_PASSWORD)
+login = xbmcplugin.getSetting(handle, SETTING_LOGIN)
+if login=="true" and (not username or not password):
+    xbmcaddon.Addon(id=PLUGIN_ID).openSettings()
+
+if login=="true" and oauth_token=="":
+    oauth_token = getSoundCloudToken()
+if login=="true" and oauth_token=="":
+    #error login failed
+    login="false"        
 soundcloud_client = SoundCloudClient(login, oauth_token)
+
+
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
     ''' Add a list item to the XBMC UI.'''
@@ -120,24 +136,24 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
     if login == 'true':
-        addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'favorites', PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES}, isFolder=True)
-    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST}, isFolder=True)
-    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH}, isFolder=True)
+        addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_users_menu():
     ''' Show the Users menu. '''
     if login == 'true':
-        addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS}, isFolder=True)
-        addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS}, isFolder=True)
-    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST}, isFolder=True)
-    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH}, isFolder=True)
+        addDirectoryItem(name="Followings", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+        addDirectoryItem(name="Followers", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups_menu():
     ''' Show the Groups menu. '''
-    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST}, isFolder=True)
-    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/search", PARAMETER_KEY_MODE: MODE_GROUPS_SEARCH}, isFolder=True)
+    addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/search", PARAMETER_KEY_MODE: MODE_GROUPS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_tracks(tracks, parameters={}):
@@ -150,7 +166,7 @@ def show_tracks(tracks, parameters={}):
         li.setProperty("mimetype", 'audio/mpeg')
         li.setProperty("IsPlayable", "true")
         trackid = str(track[client.TRACK_ID])
-        track_parameters = { PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + trackid, "permalink": trackid }
+        track_parameters = {PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + trackid, "permalink": trackid, PARAMETER_KEY_TOKEN: oauth_token}
         url = sys.argv[0] + '?' + urllib.urlencode(track_parameters)
         #url = track['stream_url']
         ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=False)
@@ -173,7 +189,7 @@ def show_users(users, parameters):
         if there are more items available, then what is currently listed. '''
     for user in users:
         li = xbmcgui.ListItem(label=user.get(client.USER_NAME, ""), thumbnailImage=user.get(client.USER_AVATAR_URL, ""))
-        user_parameters = {PARAMETER_KEY_MODE: MODE_USERS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "users/" + user[client.USER_PERMALINK], "user_permalink": user[client.USER_PERMALINK]}
+        user_parameters = {PARAMETER_KEY_MODE: MODE_USERS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "users/" + user[client.USER_PERMALINK], "user_permalink": user[client.USER_PERMALINK], PARAMETER_KEY_TOKEN: oauth_token}
         url = sys.argv[0] + '?' + urllib.urlencode(user_parameters)
         ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=True)
     if not len(users) < parameters[PARAMETER_KEY_LIMIT]:
@@ -187,7 +203,7 @@ def show_groups(groups, parameters):
         if there are more items available, then what is currently listed. '''
     for group in groups:
         li = xbmcgui.ListItem(label=group.get(client.GROUP_NAME, ""), thumbnailImage=group.get(client.GROUP_ARTWORK_URL, ""))
-        group_parameters = {PARAMETER_KEY_MODE: MODE_GROUPS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "groups/" + group[client.GROUP_PERMALINK], "group_id": group[client.GROUP_ID]}
+        group_parameters = {PARAMETER_KEY_MODE: MODE_GROUPS_TRACKS, PARAMETER_KEY_URL: PLUGIN_URL + "groups/" + group[client.GROUP_PERMALINK], "group_id": group[client.GROUP_ID], PARAMETER_KEY_TOKEN: oauth_token}
         url = sys.argv[0] + '?' + urllib.urlencode(group_parameters)
         ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=True)
     if not len(groups) < parameters[PARAMETER_KEY_LIMIT]:
@@ -206,9 +222,9 @@ def _show_keyboard(default="", heading="", hidden=False):
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
-    addDirectoryItem(name='Groups', parameters={ PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS}, isFolder=True)
-    addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS}, isFolder=True)
-    addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS}, isFolder=True)
+    addDirectoryItem(name='Groups', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name='Tracks', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+    addDirectoryItem(name='Users', parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 ##################################################################
