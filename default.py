@@ -62,6 +62,8 @@ MODE_TRACKS_FAVORITES = 12
 MODE_TRACKS_SEARCH = 13
 MODE_TRACKS_HOTTEST = 14
 MODE_TRACK_PLAY = 15
+MODE_TRACKS_DASH = 16
+MODE_TRACKS_PRIVATE = 17
 
 MODE_USERS = 20
 MODE_USERS_MENU = 21
@@ -123,20 +125,26 @@ if login=="true" and oauth_token=="":
     loginerror="true"
    
 
-def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}):
+def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}, url=""):
     ''' Add a list item to the XBMC UI.'''
     li = xbmcgui.ListItem(name, label2)
     if not infoLabels:
         infoLabels = {"Title": name }
 
     li.setInfo(infoType, infoLabels)
-    url = sys.argv[0] + '?' + urllib.urlencode(parameters)
+    if url=="":
+        url = sys.argv[0] + '?' + urllib.urlencode(parameters)
+    else:
+        #dashboard next url
+        url = url + '&' + "oauth_token=" + oauth_token
     return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)
 
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
     if login == 'true':
         addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+        addDirectoryItem(name='New in Dashboard', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "dashboard", PARAMETER_KEY_MODE: MODE_TRACKS_DASH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+        #addDirectoryItem(name='Shared Private', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -177,6 +185,25 @@ def show_tracks(tracks, parameters={}):
         modified_parameters[PARAMETER_KEY_OFFSET] = str(int(parameters[PARAMETER_KEY_OFFSET]) + int(parameters[PARAMETER_KEY_LIMIT]))
         addDirectoryItem(name="More...", parameters=modified_parameters, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+
+def show_activity_tracks(tracks, nexturl, parameters={}):
+    ''' Show a list of tracks. A 'More...' item is added, 
+        if there are more items available, then what is currently listed. '''
+    xbmcplugin.setContent(handle, "songs")
+    for track in tracks:
+        li = xbmcgui.ListItem(label=track[client.TRACK_TITLE], thumbnailImage=track[client.TRACK_ARTWORK_URL])
+        li.setInfo("music", { "title": track[client.TRACK_TITLE], "genre": track.get(client.TRACK_GENRE, "") })
+        li.setProperty("mimetype", 'audio/mpeg')
+        li.setProperty("IsPlayable", "true")
+        trackid = str(track[client.TRACK_ID])
+        track_parameters = {PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + trackid, "permalink": trackid, PARAMETER_KEY_TOKEN: oauth_token}
+        url = sys.argv[0] + '?' + urllib.urlencode(track_parameters)
+        #url = track['stream_url']
+        ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=False)
+    if nexturl != "":
+        addDirectoryItem(name="More...", parameters=parameters, isFolder=True, url=nexturl)
+    xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+
 
 def play_track(id):
     ''' Start to stream the track with the given id. '''
@@ -251,6 +278,12 @@ elif mode == MODE_TRACKS_HOTTEST:
 elif mode == MODE_TRACKS_FAVORITES:
     tracks = soundcloud_client.get_favorite_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
+elif mode == MODE_TRACKS_DASH:
+    tracks,nexturl = soundcloud_client.get_dash_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_activity_tracks(parameters={PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks, nexturl=nexturl)
+elif mode == MODE_TRACKS_PRIVATE:
+    tracks,nexturl = soundcloud_client.get_private_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_activity_tracks(parameters={PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks, nexturl=nexturl)
 elif mode == MODE_GROUPS_SEARCH:
     if (not query):
         query = _show_keyboard()

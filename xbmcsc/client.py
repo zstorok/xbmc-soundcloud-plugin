@@ -181,6 +181,28 @@ class SoundCloudClient(object):
             tracks.append({ TRACK_TITLE: json_entry[TRACK_TITLE], TRACK_STREAM_URL: json_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: json_entry[TRACK_PERMALINK], TRACK_ID: json_entry[TRACK_ID] })
 
         return tracks
+    
+    def _get_activities_tracks(self, url):
+        json_content = self._https_get_json(url)
+       
+        tracks = []
+        for json_entry in json_content["collection"]:
+            try:
+                track_entry = json_entry["origin"]
+                if TRACK_ARTWORK_URL in track_entry and track_entry[TRACK_ARTWORK_URL]:
+                    thumbnail_url = track_entry[TRACK_ARTWORK_URL]
+                else:
+                    thumbnail_url = track_entry[TRACK_USER].get(USER_AVATAR_URL)
+                tracks.append({ TRACK_TITLE: track_entry[TRACK_TITLE], TRACK_STREAM_URL: track_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: track_entry[TRACK_PERMALINK], TRACK_ID: track_entry[TRACK_ID] })
+            except:
+                tracks = []
+                
+        try:
+            nexturl = json_content["next_href"]
+        except:
+            nexturl = ""
+            
+        return tracks,nexturl
 
     def get_track(self, permalink):
         ''' Return a track from SoundCloud based on the permalink. '''
@@ -224,6 +246,16 @@ class SoundCloudClient(object):
         ''' Return a list of tracks favorited by the current user, based on the specified parameters.  login only'''
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
+   
+    def get_dash_tracks(self, offset, limit, mode, plugin_url):
+        ''' Return a list of new tracks by the following users of the current user, based on the specified parameters.  login only'''
+        url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/affiliated", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit})
+        return self._get_activities_tracks(url)
+    
+    def get_private_tracks(self, offset, limit, mode, plugin_url):
+        ''' Return a list of tracks privately shared to the current user, based on the specified parameters.  login only'''
+        url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="/me/activities/tracks/exclusive", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit})
+        return self._get_activities_tracks(url)
     
     def get_following_groups(self, offset, limit, mode, plugin_url):
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/groups", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
