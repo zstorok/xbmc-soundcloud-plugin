@@ -54,6 +54,7 @@ MODE_GROUPS_FAVORITES = 2
 MODE_GROUPS_SEARCH = 3
 MODE_GROUPS_HOTTEST = 4
 MODE_GROUPS_TRACKS = 5
+MODE_GROUPS_FAVORITES = 6
 
 MODE_TRACKS = 10
 MODE_TRACKS_MENU = 11
@@ -151,6 +152,8 @@ def show_users_menu():
 
 def show_groups_menu():
     ''' Show the Groups menu. '''
+    if login == 'true':
+        addDirectoryItem(name="My Groups", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "mygroups", PARAMETER_KEY_MODE: MODE_GROUPS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/search", PARAMETER_KEY_MODE: MODE_GROUPS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -251,14 +254,17 @@ elif mode == MODE_TRACKS_FAVORITES:
 elif mode == MODE_GROUPS_SEARCH:
     if (not query):
         query = _show_keyboard()
-    groups = soundcloud_client.get_groups(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, query)
+    groups = soundcloud_client.get_normal_groups(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, query)
     ok = show_groups(groups=groups, parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url, "q":query})
 elif mode == MODE_GROUPS_HOTTEST:
-    groups = soundcloud_client.get_groups(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    groups = soundcloud_client.get_normal_groups(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_groups(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, groups=groups)
 elif mode == MODE_GROUPS_TRACKS:
     tracks = soundcloud_client.get_group_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, int(params.get("group_id", "1")))
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
+elif mode == MODE_GROUPS_FAVORITES:
+    groups = soundcloud_client.get_following_groups(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_groups(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, groups=groups)
 elif mode == MODE_USERS_SEARCH:
     if (not query):
         query = _show_keyboard()

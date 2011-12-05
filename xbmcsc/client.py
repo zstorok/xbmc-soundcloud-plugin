@@ -29,10 +29,10 @@ import urlparse
 
 # SoundCloud application consumer key.
 CONSUMER_KEY = "91c61ef4dbc96933eff93325b5d5183e"
-
-# SoundCloud OAuth 2
 CLIENT_ID_VALUE = CONSUMER_KEY
 CLIENT_SECRET_VALUE = "7d782a25f125696162a05f03d1a2df23"
+REDURI = "http://www.google.be"
+
 GRANT_TYPE_PASSWORD_VALUE = u'password'
 GRANT_TYPE_REFRESH_TOKEN_VALUE = u'refresh_token'
 CLIENT_ID_KEY = u'client_id'
@@ -45,7 +45,6 @@ PASSWORD_KEY = u'password'
 RESPONSETYPE = u'response_type'
 TOKEN = "token"
 REDIRECTURI = u'redirect_uri'
-REDURI = "http://www.google.be"
 DISPLAY = u'display'
 POPUP = "popup"
 
@@ -144,7 +143,7 @@ class SoundCloudClient(object):
         for f in br.forms():
             print f
         '''
-        # Select the first (index zero) form
+        # Select the first (normal login) form
         br.select_form(nr=1)
         
         # User credentials
@@ -153,14 +152,11 @@ class SoundCloudClient(object):
         
         # Login
         br.submit()
-        '''
-        r = br.click(type="submit", nr=1)
-        br.open(r)
-        '''
+
         result = br.geturl()
         qs = dict(urlparse.parse_qs(result))
-        print (qs.get("http://www.google.be?#access_token")[0])   
-        return  qs.get("http://www.google.be?#access_token")[0]
+        #print (qs.get(REDURI + "?#access_token")[0])   
+        return  qs.get(REDURI + "?#access_token")[0]
             
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of tracks from SoundCloud, based on the parameters. '''
@@ -228,8 +224,14 @@ class SoundCloudClient(object):
         ''' Return a list of tracks favorited by the current user, based on the specified parameters.  login only'''
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
+    
+    def get_following_groups(self, offset, limit, mode, plugin_url):
+        url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/groups", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        print(url)
+        json_content = self._https_get_json(url)
+        return self.get_groups(json_content)
 
-    def get_groups(self, offset, limit, mode, plugin_url, query=""):
+    def get_normal_groups(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of groups, based on the specified parameters. '''
         if self.login:
             url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
@@ -239,8 +241,9 @@ class SoundCloudClient(object):
             url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
             print(url)
             json_content = self._http_get_json(url)
+        return self.get_groups(json_content)
             
-            
+    def get_groups(self, json_content):        
         groups = []
         for json_entry in json_content:
             if GROUP_ARTWORK_URL in json_entry and json_entry[GROUP_ARTWORK_URL]:
