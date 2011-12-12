@@ -36,8 +36,6 @@ dbglevel = 3 # Do NOT change from 3
 import CommonFunctions
 common = CommonFunctions.CommonFunctions()
 common.plugin = plugin
-#common.dbg = True
-#common.dbglevel = 3
 
 # append pydev remote debugger
 if REMOTE_DBG:
@@ -98,7 +96,6 @@ SETTING_LOGIN = u'login_to_soundcloud'
 
 
 loginerror = False
-#params = _parameters_string_to_dict(sys.argv[2])
 params = common.getParameters(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
@@ -201,7 +198,6 @@ def show_activity_tracks(tracks, nexturl, parameters={}):
         trackid = str(track[client.TRACK_ID])
         track_parameters = {PARAMETER_KEY_MODE: MODE_TRACK_PLAY, PARAMETER_KEY_URL: PLUGIN_URL + "tracks/" + trackid, "permalink": trackid, PARAMETER_KEY_TOKEN: oauth_token}
         url = sys.argv[0] + '?' + urllib.urlencode(track_parameters)
-        #url = track['stream_url']
         ok = xbmcplugin.addDirectoryItem(handle, url=url, listitem=li, isFolder=False)
     if nexturl != "":
         addDirectoryItem(name="More...", parameters=parameters, isFolder=True, url=nexturl)
@@ -248,11 +244,6 @@ def _show_keyboard(default="", heading="", hidden=False):
     ''' Show the keyboard and return the text entered. '''
     search = common.getUserInput(heading, default)
     return search
-    #keyboard = xbmc.Keyboard(default, heading, hidden)
-    #keyboard.doModal()
-    #if (keyboard.isConfirmed()):
-    #    return unicode(keyboard.getText(), "utf-8")
-    #return default
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
