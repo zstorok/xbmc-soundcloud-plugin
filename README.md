@@ -12,7 +12,6 @@ Third-party Libraries
 ---------------------
 The XBMC SoundCloud plugin makes use of the following third-party Python libraries:
 	* httplib2
-	* oauth2
 	* simplejson
  	* mechanize 
 	
