@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Sep 9, 2010
-@author: Zsolt Török
+@author: Zsolt Török, Vanhoutteghem Pieter
 
 Copyright (C) 2010 Zsolt Török
  
@@ -23,15 +23,15 @@ along with XBMC SoundCloud Plugin.  If not, see <http://www.gnu.org/licenses/>.
 import httplib2
 import urllib
 import simplejson as json
-import re
-import mechanize
 import urlparse
+
 
 # SoundCloud application consumer key.
 CONSUMER_KEY = "91c61ef4dbc96933eff93325b5d5183e"
 CLIENT_ID_VALUE = CONSUMER_KEY
 CLIENT_SECRET_VALUE = "7d782a25f125696162a05f03d1a2df23"
 REDURI = "http://www.google.be"
+LOGINURL = "https://soundcloud.com/connect/login"
 
 GRANT_TYPE_PASSWORD_VALUE = u'password'
 GRANT_TYPE_REFRESH_TOKEN_VALUE = u'refresh_token'
@@ -93,71 +93,43 @@ class SoundCloudClient(object):
                 self.oauth_token = oauth_token
                 #self.oauth_refresh_token = oauth_refresh_token
             else:
-                self.oauth_token = self.get_oauth_tokens()
+                self.oauth_token = self.get_oauth_tokens(LOGINURL)
         
-    def get_oauth_tokens_user_credentials_flow(self):
-        #not working !!!
-        ''' Authenticates with SoundCloud using the given credentials and returns an OAuth access token and a refresh token.'''
-        url = 'https://soundcloud.com/oauth2/token?' + urllib.urlencode({CLIENT_ID_KEY : CLIENT_ID_VALUE, CLIENT_SECRET_KEY : CLIENT_SECRET_VALUE, GRANT_TYPE_KEY : GRANT_TYPE_PASSWORD_VALUE, USERNAME_KEY : self.username, PASSWORD_KEY : self.password, SCOPE : NONE_EXPIRY})
-        print(url)
-        
+    def get_oauth_tokens(self, url):
         try:
-            json_content = self._https_get_json(url)
-            print (json_content)
-            oauth_access_token = json_content.get('access_token')
-            #oauth_refresh_token = json_content.get('refresh_token')
-        except:
-            oauth_access_token = ""
-        
-        return oauth_access_token
-    
-    def get_oauth_tokens(self):
-        
-        url = 'https://soundcloud.com/connect?' + urllib.urlencode({CLIENT_ID_KEY : CLIENT_ID_VALUE, CLIENT_SECRET_KEY : CLIENT_SECRET_VALUE, RESPONSETYPE : TOKEN, SCOPE : NONE_EXPIRY, REDIRECTURI: REDURI, DISPLAY: POPUP})
-        print(url)
-        try:
-            oauth_access_token = self.getsoundcloudconnect(url)
+            oauth_access_token = self.getlogintoken(url)
         except:
             oauth_access_token = ""
             self.login = False
         return oauth_access_token
     
-    def getsoundcloudconnect(self, url):
-        br = mechanize.Browser()
-        #Browser options
-        br.set_handle_equiv(True)
-        #br.set_handle_gzip(True)
-        br.set_handle_redirect(True)
-        br.set_handle_referer(True)
-        br.set_handle_robots(False)
-        
-        # Follows refresh 0 but not hangs on refresh > 0
-        br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
-        
-        # User-Agent (this is cheating, ok?)
-        br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
-        
-        r = br.open(url)
-        
-        #html = r.read()
-        '''
-        for f in br.forms():
-            print f
-        '''
-        # Select the first (normal login) form
-        br.select_form(nr=1)
-        
-        # User credentials
-        br.form['username'] = self.username
-        br.form['password'] = self.password
-        
-        # Login
-        br.submit()
+    def getlogintoken(self,url):
+        #https://soundcloud.com/connect/login
+        #params =
+        #<form id="oauth2-login-form" class="authorize-client log-in existing-user authorize-token throbberform" method="post" action="/connect/login">
+        #<input id="client_id" type="hidden" value="91c61ef4dbc96933eff93325b5d5183e" name="client_id">
+        #<input id="redirect_uri" type="hidden" value="http://www.google.be" name="redirect_uri">
+        #<input id="response_type" type="hidden" value="token" name="response_type">
+        #<input id="scope" type="hidden" value="non-expiring" name="scope">
+        #<input id="display" type="hidden" value="popup" name="display">
+        #<input id="username" class="title" type="text" name="username" maxlength="255">
+        #<input id="password" class="title" type="password" name="password">
 
-        result = br.geturl()
-        qs = dict(urlparse.parse_qs(result))
-        #print (qs.get(REDURI + "?#access_token")[0])   
-        return  qs.get(REDURI + "?#access_token")[0]
+        urlparams = {CLIENT_ID_KEY: CLIENT_ID_VALUE,
+                   REDIRECTURI: REDURI,
+                   RESPONSETYPE: TOKEN,
+                   SCOPE: NONE_EXPIRY,
+                   DISPLAY: POPUP,
+                   USERNAME_KEY: self.username,
+                   PASSWORD_KEY: self.password}
+        urldata = urllib.urlencode(urlparams)
+
+        h = httplib2.Http(disable_ssl_certificate_validation=True)
+        response, content = h.request(url, 'POST', urldata,
+                                         headers={'Content-type': 'application/x-www-form-urlencoded'})
+
+        qs = dict(urlparse.parse_qs(response['location']))
+        return qs.get(REDURI + "?#access_token")[0]
             
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of tracks from SoundCloud, based on the parameters. '''
