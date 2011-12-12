@@ -1,3 +1,11 @@
+0.2.3
+- Remove unused depends
+- Cleanup
+
+0.2.2
+- Fixed pagination in dashboard
+- added private tracks
+
 0.2.1
 - Update to xbmc eden
 - Login possible
