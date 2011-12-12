@@ -195,7 +195,8 @@ class SoundCloudClient(object):
                     thumbnail_url = track_entry[TRACK_USER].get(USER_AVATAR_URL)
                 tracks.append({ TRACK_TITLE: track_entry[TRACK_TITLE], TRACK_STREAM_URL: track_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: track_entry[TRACK_PERMALINK], TRACK_ID: track_entry[TRACK_ID] })
             except:
-                tracks = []
+                print(track_entry)
+#                tracks = []
                 
         try:
             qs = dict(urlparse.parse_qs(urlparse.urlparse(json_content["next_href"]).query))
