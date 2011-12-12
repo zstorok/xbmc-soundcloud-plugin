@@ -20,10 +20,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with XBMC SoundCloud Plugin.  If not, see <http://www.gnu.org/licenses/>.
 '''
+import sys
 import httplib2
 import urllib
 import simplejson as json
 import urlparse
+
+dbg = True # Set to false if you don't want debugging
+dbglevel = 3 # Do NOT change from 3
+
 
 
 # SoundCloud application consumer key.
@@ -85,6 +90,7 @@ class SoundCloudClient(object):
         '''
         Constructor
         '''
+        self.common = sys.modules[ "__main__" ].common
         self.login = login
         self.username = username
         self.password = password
@@ -129,6 +135,7 @@ class SoundCloudClient(object):
                                          headers={'Content-type': 'application/x-www-form-urlencoded'})
 
         qs = dict(urlparse.parse_qs(response['location']))
+        print("New Login " + qs.get(REDURI + "?#access_token")[0])
         return qs.get(REDURI + "?#access_token")[0]
             
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
@@ -321,7 +328,6 @@ class SoundCloudClient(object):
         
         return json.loads(content)
 
-
     def _https_get_json(self, url):
         #login only
         h = httplib2.Http(disable_ssl_certificate_validation=True)
@@ -330,3 +336,17 @@ class SoundCloudClient(object):
             raise RuntimeError('Authentication error')
         
         return json.loads(content)
+    
+    def _http_get_json_new(self,url):
+        result = self.common._fetchPage({"url": url})
+        if result["status"] != 200:
+            raise RuntimeError('Error')
+        
+        return json.loads(result["content"])
+
+    def _https_get_json_new(self,url):
+        result = self.common._fetchPage({"url": url})
+        if result["status"] != 200:
+            raise RuntimeError('Error')  
+        return json.loads(result["content"]) 
+    
