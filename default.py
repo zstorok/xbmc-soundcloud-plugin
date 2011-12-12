@@ -134,7 +134,7 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
     if url=="":
         url = sys.argv[0] + '?' + urllib.urlencode(parameters) 
     else:
-        #dashboard next url
+        #activities next url
         url = sys.argv[0] + '?' + urllib.urlencode(parameters) + '&' + "nexturl=" + url
     print(url)
     return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)

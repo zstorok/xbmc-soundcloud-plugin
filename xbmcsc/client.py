@@ -29,8 +29,6 @@ import urlparse
 dbg = True # Set to false if you don't want debugging
 dbglevel = 3 # Do NOT change from 3
 
-
-
 # SoundCloud application consumer key.
 CONSUMER_KEY = "91c61ef4dbc96933eff93325b5d5183e"
 CLIENT_ID_VALUE = CONSUMER_KEY
@@ -97,7 +95,6 @@ class SoundCloudClient(object):
         if login:
             if oauth_token:
                 self.oauth_token = oauth_token
-                #self.oauth_refresh_token = oauth_refresh_token
             else:
                 self.oauth_token = self.get_oauth_tokens(LOGINURL)
         
@@ -137,92 +134,9 @@ class SoundCloudClient(object):
         qs = dict(urlparse.parse_qs(response['location']))
         self.common.log("New Login " + qs.get(REDURI + "?#access_token")[0])
         return qs.get(REDURI + "?#access_token")[0]
-            
-    def get_tracks(self, offset, limit, mode, plugin_url, query=""):
-        ''' Return a list of tracks from SoundCloud, based on the parameters. '''
-        if self.login:
-            url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="tracks", parameters={  QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
-        else:
-            url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
-        return self._get_tracks(url)
 
-    def _get_tracks(self, url):
-        if self.login:
-            json_content = self._https_get_json(url)
-        else:
-            json_content = self._http_get_json(url)
-        tracks = []
-        for json_entry in json_content:
-            if TRACK_ARTWORK_URL in json_entry and json_entry[TRACK_ARTWORK_URL]:
-                thumbnail_url = json_entry[TRACK_ARTWORK_URL]
-            else:
-                thumbnail_url = json_entry[TRACK_USER].get(USER_AVATAR_URL)
-            tracks.append({ TRACK_TITLE: json_entry[TRACK_TITLE], TRACK_STREAM_URL: json_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: json_entry[TRACK_PERMALINK], TRACK_ID: json_entry[TRACK_ID] })
+#AUTHENTICATED ACCESS
 
-        return tracks
-    
-    def _get_activities_tracks(self, url):
-        json_content = self._https_get_json(url)
-       
-        tracks = []
-        for json_entry in json_content["collection"]:
-            try:
-                track_entry = json_entry["origin"]
-                if TRACK_ARTWORK_URL in track_entry and track_entry[TRACK_ARTWORK_URL]:
-                    thumbnail_url = track_entry[TRACK_ARTWORK_URL]
-                else:
-                    thumbnail_url = track_entry[TRACK_USER].get(USER_AVATAR_URL)
-                tracks.append({ TRACK_TITLE: track_entry[TRACK_TITLE], TRACK_STREAM_URL: track_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: track_entry[TRACK_PERMALINK], TRACK_ID: track_entry[TRACK_ID] })
-            except:
-                print(track_entry)
-#                tracks = []
-                
-        try:
-            qs = dict(urlparse.parse_qs(urlparse.urlparse(json_content["next_href"]).query))
-            nexturl = qs.get(QUERY_CURSOR)[0]
-        except:
-            nexturl = ""
-            
-        return tracks,nexturl
-
-    def get_track(self, permalink):
-        ''' Return a track from SoundCloud based on the permalink. '''
-        if self.login:
-            url = self._build_track_query_url(permalink, base='https://api.soundcloud.com/', parameters={QUERY_OAUTH_TOKEN: self.oauth_token})
-            print ("track query url: " + url)
-            json_content = self._https_get_json(url)
-        else:
-            url = self._build_track_query_url(permalink, base='http://api.soundcloud.com/', parameters={QUERY_CONSUMER_KEY: CONSUMER_KEY})
-            print ("track query url: " + url)
-            json_content = self._http_get_json(url)
-        #json_content = ""
-        print ("track query response JSON: " + str(json_content))
-        if TRACK_ARTWORK_URL in json_content and json_content[TRACK_ARTWORK_URL]:
-                thumbnail_url = json_content[TRACK_ARTWORK_URL]
-        else:
-                thumbnail_url = json_content[TRACK_USER].get(USER_AVATAR_URL)
-        if self.login:
-            track_stream_url_with_consumer_key = '%s?%s' % (json_content[TRACK_STREAM_URL], str(urllib.urlencode({QUERY_OAUTH_TOKEN: self.oauth_token})))
-        else:
-            track_stream_url_with_consumer_key = '%s?%s' % (json_content[TRACK_STREAM_URL], str(urllib.urlencode({QUERY_CONSUMER_KEY: CONSUMER_KEY})))
-        return { TRACK_STREAM_URL: track_stream_url_with_consumer_key, TRACK_TITLE: json_content[TRACK_TITLE], TRACK_ARTWORK_URL: thumbnail_url, TRACK_GENRE: json_content[TRACK_GENRE] }
-
-    def get_group_tracks(self, offset, limit, mode, plugin_url, group_id):
-        ''' Return a list of tracks belonging to the given group, based on the specified parameters. '''
-        if self.login:
-            url = self._build_groups_query_url(base='https://api.soundcloud.com/', resource_type="tracks", group_id=group_id, parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        else:
-            url = self._build_groups_query_url(base='http://api.soundcloud.com/', resource_type="tracks", group_id=group_id, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        return self._get_tracks(url)
-
-    def get_user_tracks(self, offset, limit, mode, plugin_url, user_permalink):
-        ''' Return a list of tracks uploaded by the given user, based on the specified parameters. '''
-        if self.login:
-            url = self._build_users_query_url(base='https://api.soundcloud.com/',resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        else:
-            url = self._build_users_query_url(base='http://api.soundcloud.com/', resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        return self._get_tracks(url)
-    
     def get_favorite_tracks(self, offset, limit, mode, plugin_url):
         ''' Return a list of tracks favorited by the current user, based on the specified parameters.  login only'''
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
@@ -244,25 +158,70 @@ class SoundCloudClient(object):
             url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/exclusive", parameters={ QUERY_CURSOR: cursor, QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_LIMIT: limit})
         return self._get_activities_tracks(url)
     
+    def _get_activities_tracks(self, url):
+        json_content = self._http_get_json(url)
+        tracks = []
+        for json_entry in json_content["collection"]:
+            try:
+                track_entry = json_entry["origin"]
+                if TRACK_ARTWORK_URL in track_entry and track_entry[TRACK_ARTWORK_URL]:
+                    thumbnail_url = track_entry[TRACK_ARTWORK_URL]
+                else:
+                    thumbnail_url = track_entry[TRACK_USER].get(USER_AVATAR_URL)
+                tracks.append({ TRACK_TITLE: track_entry[TRACK_TITLE], TRACK_STREAM_URL: track_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: track_entry[TRACK_PERMALINK], TRACK_ID: track_entry[TRACK_ID] })
+            except:
+                print(track_entry)
+            
+        try:
+            qs = dict(urlparse.parse_qs(urlparse.urlparse(json_content["next_href"]).query))
+            nexturl = qs.get(QUERY_CURSOR)[0]
+        except:
+            nexturl = ""
+            
+        return tracks,nexturl
+
     def get_following_groups(self, offset, limit, mode, plugin_url):
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/groups", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        print(url)
-        json_content = self._https_get_json(url)
-        return self.get_groups(json_content)
+        return self._get_groups(url)
+    
+    def get_following_users(self, offset, limit, mode, plugin_url):
+        url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="me/followings", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+        
+    def get_follower_users(self, offset, limit, mode, plugin_url):
+        url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="me/followers", parameters={ QUERY_OAUTH_TOKEN : self.oauth_token, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+
+
+#NORMAL ACCESS        
+    
+    def get_tracks(self, offset, limit, mode, plugin_url, query=""):
+        ''' Return a list of tracks from SoundCloud, based on the parameters. '''
+        url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        return self._get_tracks(url)
+
+    def get_group_tracks(self, offset, limit, mode, plugin_url, group_id):
+        ''' Return a list of tracks belonging to the given group, based on the specified parameters. '''
+        url = self._build_groups_query_url(base='http://api.soundcloud.com/', resource_type="tracks", group_id=group_id, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_tracks(url)
+
+    def get_user_tracks(self, offset, limit, mode, plugin_url, user_permalink):
+        ''' Return a list of tracks uploaded by the given user, based on the specified parameters. '''
+        url = self._build_users_query_url(base='http://api.soundcloud.com/', resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_tracks(url)
 
     def get_normal_groups(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of groups, based on the specified parameters. '''
-        if self.login:
-            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-            print(url)
-            json_content = self._https_get_json(url)
-        else:
-            url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-            print(url)
-            json_content = self._http_get_json(url)
-        return self.get_groups(json_content)
+        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        return self._get_groups(url)
             
-    def get_groups(self, json_content):        
+    def get_users(self, offset, limit, mode, plugin_url, query=""):
+        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        return self._get_users(url)
+
+    def _get_groups(self, url):
+        ''' Return a list of groups'''    
+        json_content = self._http_get_json(url)    
         groups = []
         for json_entry in json_content:
             if GROUP_ARTWORK_URL in json_entry and json_entry[GROUP_ARTWORK_URL]:
@@ -275,67 +234,56 @@ class SoundCloudClient(object):
 
         return groups
 
-    def get_users(self, offset, limit, mode, plugin_url, query):
-        if self.login:
-            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="users", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
-        else:
-            url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
-        return self._get_users(url)
+    def _get_tracks(self, url):
+        ''' Return a list of tracks'''
+        json_content = self._http_get_json(url)
+        tracks = []
+        for json_entry in json_content:
+            if TRACK_ARTWORK_URL in json_entry and json_entry[TRACK_ARTWORK_URL]:
+                thumbnail_url = json_entry[TRACK_ARTWORK_URL]
+            else:
+                thumbnail_url = json_entry[TRACK_USER].get(USER_AVATAR_URL)
+            tracks.append({ TRACK_TITLE: json_entry[TRACK_TITLE], TRACK_STREAM_URL: json_entry.get(TRACK_STREAM_URL, ""), TRACK_ARTWORK_URL: thumbnail_url, TRACK_PERMALINK: json_entry[TRACK_PERMALINK], TRACK_ID: json_entry[TRACK_ID] })
 
-    def get_following_users(self, offset, limit, mode, plugin_url):
-        url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="me/followings", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        return self._get_users(url)
-        
-    def get_follower_users(self, offset, limit, mode, plugin_url):
-        url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="me/followers", parameters={ QUERY_OAUTH_TOKEN : self.oauth_token, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
-        return self._get_users(url)
+        return tracks
 
     def _get_users(self, url):
-        ''' Return a list of users, based on the specified parameters. '''
-        if self.login:
-            json_content = self._https_get_json(url)
-        else:
-            json_content = self._http_get_json(url)
+        ''' Return a list of users'''
+        json_content = self._http_get_json(url)
         users = []
         for json_entry in json_content:
             users.append({ USER_NAME: json_entry[USER_NAME], USER_AVATAR_URL: json_entry[USER_AVATAR_URL], USER_ID: json_entry[USER_ID], USER_PERMALINK_URL: json_entry[USER_PERMALINK_URL], USER_PERMALINK: json_entry[USER_PERMALINK] })
 
         return users
 
-    
-    def _build_query_url(self, resource_type, parameters, base="https://api.soundcloud.com/", format="json"):
+    def get_track(self, id):
+        ''' Return a track from SoundCloud based on the id. '''
+        url = self._build_track_query_url(id, base='http://api.soundcloud.com/', parameters={QUERY_CONSUMER_KEY: CONSUMER_KEY})
+        json_content = self._http_get_json(url)
+
+        if TRACK_ARTWORK_URL in json_content and json_content[TRACK_ARTWORK_URL]:
+                thumbnail_url = json_content[TRACK_ARTWORK_URL]
+        else:
+                thumbnail_url = json_content[TRACK_USER].get(USER_AVATAR_URL)
+
+        track_stream_url = '%s?%s' % (json_content[TRACK_STREAM_URL], str(urllib.urlencode({QUERY_CONSUMER_KEY: CONSUMER_KEY})))
+        return { TRACK_STREAM_URL: track_stream_url, TRACK_TITLE: json_content[TRACK_TITLE], TRACK_ARTWORK_URL: thumbnail_url, TRACK_GENRE: json_content[TRACK_GENRE] }
+
+    def _build_query_url(self, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%s%s.%s?%s' % (base, resource_type, format, str(urllib.urlencode(parameters)))
-        print (url)
         return url
 
-    def _build_track_query_url(self, permalink, parameters, base="https://api.soundcloud.com/", format="json"):
+    def _build_track_query_url(self, permalink, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%stracks/%s.%s?%s' % (base, permalink, format, str(urllib.urlencode(parameters)))
         return url
 
-    def _build_groups_query_url(self, group_id, resource_type, parameters, base="https://api.soundcloud.com/", format="json"):
+    def _build_groups_query_url(self, group_id, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%sgroups/%d/%s.%s?%s' % (base, group_id, resource_type, format, str(urllib.urlencode(parameters)))
         return url
 
-    def _build_users_query_url(self, user_permalink, resource_type, parameters, base="https://api.soundcloud.com/", format="json"):
+    def _build_users_query_url(self, user_permalink, resource_type, parameters, base="http://api.soundcloud.com/", format="json"):
         url = '%susers/%s/%s.%s?%s' % (base, user_permalink, resource_type, format, str(urllib.urlencode(parameters)))
         return url
-    
-    def _http_get_json2(self, url):
-        h = httplib2.Http()
-        resp, content = h.request(url, 'GET')
-        if resp.status == 401:
-            raise RuntimeError('Authentication error')
-        
-        return json.loads(content)
-
-    def _https_get_json2(self, url):
-        #login only
-        h = httplib2.Http(disable_ssl_certificate_validation=True)
-        resp, content = h.request(url, 'GET')
-        if resp.status == 401:
-            raise RuntimeError('Authentication error')
-        
-        return json.loads(content)
     
     def _http_get_json(self,url):
         result = self.common._fetchPage({"link": url})
@@ -344,9 +292,4 @@ class SoundCloudClient(object):
         
         return json.loads(result["content"])
 
-    def _https_get_json(self,url):
-        result = self.common._fetchPage({"link": url})
-        if result["status"] != 200:
-            raise RuntimeError('Error')  
-        return json.loads(result["content"]) 
     
