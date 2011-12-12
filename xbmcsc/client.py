@@ -135,7 +135,7 @@ class SoundCloudClient(object):
                                          headers={'Content-type': 'application/x-www-form-urlencoded'})
 
         qs = dict(urlparse.parse_qs(response['location']))
-        print("New Login " + qs.get(REDURI + "?#access_token")[0])
+        self.common.log("New Login " + qs.get(REDURI + "?#access_token")[0])
         return qs.get(REDURI + "?#access_token")[0]
             
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
@@ -320,7 +320,7 @@ class SoundCloudClient(object):
         url = '%susers/%s/%s.%s?%s' % (base, user_permalink, resource_type, format, str(urllib.urlencode(parameters)))
         return url
     
-    def _http_get_json(self, url):
+    def _http_get_json2(self, url):
         h = httplib2.Http()
         resp, content = h.request(url, 'GET')
         if resp.status == 401:
@@ -328,7 +328,7 @@ class SoundCloudClient(object):
         
         return json.loads(content)
 
-    def _https_get_json(self, url):
+    def _https_get_json2(self, url):
         #login only
         h = httplib2.Http(disable_ssl_certificate_validation=True)
         resp, content = h.request(url, 'GET')
@@ -337,15 +337,15 @@ class SoundCloudClient(object):
         
         return json.loads(content)
     
-    def _http_get_json_new(self,url):
-        result = self.common._fetchPage({"url": url})
+    def _http_get_json(self,url):
+        result = self.common._fetchPage({"link": url})
         if result["status"] != 200:
             raise RuntimeError('Error')
         
         return json.loads(result["content"])
 
-    def _https_get_json_new(self,url):
-        result = self.common._fetchPage({"url": url})
+    def _https_get_json(self,url):
+        result = self.common._fetchPage({"link": url})
         if result["status"] != 200:
             raise RuntimeError('Error')  
         return json.loads(result["content"]) 
