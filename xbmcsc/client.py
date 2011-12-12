@@ -76,6 +76,7 @@ QUERY_LIMIT = 'limit'
 QUERY_Q = 'q'
 QUERY_ORDER = 'order'
 QUERY_OAUTH_TOKEN = 'oauth_token'
+QUERY_CURSOR = 'cursor'
 
 class SoundCloudClient(object):
     ''' SoundCloud client to handle all communication with the SoundCloud REST API. '''
@@ -164,7 +165,6 @@ class SoundCloudClient(object):
             url = self._build_query_url(base="https://api.soundcloud.com/", resource_type="tracks", parameters={  QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
         else:
             url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
-        print ("URL: " + url)
         return self._get_tracks(url)
 
     def _get_tracks(self, url):
@@ -198,7 +198,8 @@ class SoundCloudClient(object):
                 tracks = []
                 
         try:
-            nexturl = json_content["next_href"]
+            qs = dict(urlparse.parse_qs(urlparse.urlparse(json_content["next_href"]).query))
+            nexturl = qs.get(QUERY_CURSOR)[0]
         except:
             nexturl = ""
             
@@ -247,14 +248,20 @@ class SoundCloudClient(object):
         url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/favorites", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
    
-    def get_dash_tracks(self, offset, limit, mode, plugin_url):
+    def get_dash_tracks(self, limit, mode, plugin_url, cursor):
         ''' Return a list of new tracks by the following users of the current user, based on the specified parameters.  login only'''
-        url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/affiliated", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit})
+        if cursor == "":
+            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/affiliated", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_LIMIT: limit})
+        else:
+            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/affiliated", parameters={ QUERY_CURSOR: cursor, QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_LIMIT: limit})
         return self._get_activities_tracks(url)
     
-    def get_private_tracks(self, offset, limit, mode, plugin_url):
+    def get_private_tracks(self, limit, mode, plugin_url, cursor):
         ''' Return a list of tracks privately shared to the current user, based on the specified parameters.  login only'''
-        url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="/me/activities/tracks/exclusive", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit})
+        if cursor == "":
+            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/exclusive", parameters={ QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_LIMIT: limit})
+        else:
+            url = self._build_query_url(base='https://api.soundcloud.com/', resource_type="me/activities/tracks/exclusive", parameters={ QUERY_CURSOR: cursor, QUERY_OAUTH_TOKEN: self.oauth_token, QUERY_FILTER: TRACK_STREAMABLE, QUERY_LIMIT: limit})
         return self._get_activities_tracks(url)
     
     def get_following_groups(self, offset, limit, mode, plugin_url):
@@ -315,6 +322,7 @@ class SoundCloudClient(object):
 
         return users
 
+    
     def _build_query_url(self, resource_type, parameters, base="https://api.soundcloud.com/", format="json"):
         url = '%s%s.%s?%s' % (base, resource_type, format, str(urllib.urlencode(parameters)))
         print (url)

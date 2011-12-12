@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Sep 4, 2010
-@author: Zsolt Török
+@author: Zsolt Török, Vanhoutteghem Pieter
 
 Copyright (C) 2010 Zsolt Török
  
@@ -25,10 +25,19 @@ import sys
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
 import xbmcsc.client as client
 import urllib
+
 from xbmcsc.client import SoundCloudClient
 
-loginerror = False
+plugin="SoundCloud"
 REMOTE_DBG = False
+dbg = True # Set to false if you don't want debugging
+dbglevel = 3 # Do NOT change from 3
+
+import CommonFunctions
+common = CommonFunctions.CommonFunctions()
+common.plugin = plugin
+#common.dbg = True
+#common.dbglevel = 3
 
 # append pydev remote debugger
 if REMOTE_DBG:
@@ -88,21 +97,13 @@ SETTING_PASSWORD = u'password'
 SETTING_LOGIN = u'login_to_soundcloud'
 
 
-def _parameters_string_to_dict(parameters):
-    ''' Convert parameters encoded in a URL to a dict. '''
-    paramDict = {}
-    if parameters:
-        paramPairs = parameters[1:].split("&")
-        for paramsPair in paramPairs:
-            paramSplits = paramsPair.split('=')
-            if (len(paramSplits)) == 2:
-                paramDict[paramSplits[0]] = paramSplits[1]
-    return paramDict
-
-params = _parameters_string_to_dict(sys.argv[2])
+loginerror = False
+#params = _parameters_string_to_dict(sys.argv[2])
+params = common.getParameters(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
 mode = int(params.get(PARAMETER_KEY_MODE, "0"))
+nexturl = params.get("nexturl","")
 query = urllib.unquote_plus(params.get("q", ""))
 oauth_token = urllib.unquote_plus(params.get(PARAMETER_KEY_TOKEN,""))
 
@@ -123,6 +124,7 @@ if login=="true" and oauth_token=="":
     #error login failed
     login="false"
     loginerror="true"
+    common.log("Login Failed", 2)
    
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}, url=""):
@@ -133,10 +135,11 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
 
     li.setInfo(infoType, infoLabels)
     if url=="":
-        url = sys.argv[0] + '?' + urllib.urlencode(parameters)
+        url = sys.argv[0] + '?' + urllib.urlencode(parameters) 
     else:
         #dashboard next url
-        url = url + '&' + "oauth_token=" + oauth_token
+        url = sys.argv[0] + '?' + urllib.urlencode(parameters) + '&' + "nexturl=" + url
+    print(url)
     return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)
 
 def show_tracks_menu():
@@ -144,7 +147,7 @@ def show_tracks_menu():
     if login == 'true':
         addDirectoryItem(name='Favorites', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
         addDirectoryItem(name='New in Dashboard', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "dashboard", PARAMETER_KEY_MODE: MODE_TRACKS_DASH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
-        #addDirectoryItem(name='Shared Private', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+        addDirectoryItem(name='Shared Private', parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Hottest", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name="Search", parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -243,11 +246,13 @@ def show_groups(groups, parameters):
 
 def _show_keyboard(default="", heading="", hidden=False):
     ''' Show the keyboard and return the text entered. '''
-    keyboard = xbmc.Keyboard(default, heading, hidden)
-    keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        return unicode(keyboard.getText(), "utf-8")
-    return default
+    search = common.getUserInput(heading, default)
+    return search
+    #keyboard = xbmc.Keyboard(default, heading, hidden)
+    #keyboard.doModal()
+    #if (keyboard.isConfirmed()):
+    #    return unicode(keyboard.getText(), "utf-8")
+    #return default
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
@@ -279,10 +284,10 @@ elif mode == MODE_TRACKS_FAVORITES:
     tracks = soundcloud_client.get_favorite_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
 elif mode == MODE_TRACKS_DASH:
-    tracks,nexturl = soundcloud_client.get_dash_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    tracks,nexturl = soundcloud_client.get_dash_tracks(int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, nexturl)
     ok = show_activity_tracks(parameters={PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks, nexturl=nexturl)
 elif mode == MODE_TRACKS_PRIVATE:
-    tracks,nexturl = soundcloud_client.get_private_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    tracks,nexturl = soundcloud_client.get_private_tracks(int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, nexturl)
     ok = show_activity_tracks(parameters={PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks, nexturl=nexturl)
 elif mode == MODE_GROUPS_SEARCH:
     if (not query):
@@ -322,5 +327,5 @@ elif mode == MODE_TRACK_PLAY:
     play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))
     
 if loginerror=="true":
-    xbmc.executebuiltin("Notification(%s,%s,%i)" % ("warning", "Login Failed, Change & Reboot XBMC", 5000))
+    xbmc.executebuiltin("Notification(%s,%s,%i)" % ("warning", "Login Failed", 5000))
     
