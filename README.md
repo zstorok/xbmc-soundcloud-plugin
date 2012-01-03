@@ -11,7 +11,6 @@ It also supports basic login (no facebook authentication) for viewing your favor
 Third-party Libraries
 ---------------------
 The XBMC SoundCloud plugin makes use of the following third-party Python libraries:
-	* parseDOM
 	* httplib2
 	* simplejson
 	

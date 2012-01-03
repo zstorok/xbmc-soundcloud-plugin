@@ -122,7 +122,6 @@ class SoundCloudClient(object):
                    USERNAME_KEY: self.username,
                    PASSWORD_KEY: self.password}
         urldata = urllib.urlencode(urlparams)
-
         h = httplib2.Http(disable_ssl_certificate_validation=True)
         response, content = h.request(url, 'POST', urldata,
                                          headers={'Content-type': 'application/x-www-form-urlencoded'})
@@ -281,7 +280,7 @@ class SoundCloudClient(object):
         return url
     
     def _http_get_json(self, url):
-        h = httplib2.Http()
+        h = httplib2.Http(disable_ssl_certificate_validation=True)
         resp, content = h.request(url, 'GET')
         if resp.status == 401:
             raise RuntimeError('Authentication error')
