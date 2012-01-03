@@ -85,7 +85,6 @@ class SoundCloudClient(object):
         '''
         Constructor
         '''
-        self.common = sys.modules[ "__main__" ].common
         self.login = login
         self.username = username
         self.password = password
@@ -129,7 +128,6 @@ class SoundCloudClient(object):
                                          headers={'Content-type': 'application/x-www-form-urlencoded'})
 
         qs = dict(urlparse.parse_qs(response['location']))
-        self.common.log("New Login " + qs.get(REDURI + "?#access_token")[0])
         return qs.get(REDURI + "?#access_token")[0]
 
 #AUTHENTICATED ACCESS
