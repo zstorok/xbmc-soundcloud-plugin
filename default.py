@@ -28,28 +28,6 @@ import urllib
 
 from xbmcsc.client import SoundCloudClient
 
-plugin="SoundCloud"
-REMOTE_DBG = False
-dbg = True # Set to false if you don't want debugging
-dbglevel = 3 # Do NOT change from 3
-
-import CommonFunctions
-common = CommonFunctions.CommonFunctions()
-common.plugin = plugin
-
-# append pydev remote debugger
-if REMOTE_DBG:
-    # Make pydev debugger works for auto reload.
-    # Note pydevd module need to be copied in XBMC\system\python\Lib\pysrc
-    try:
-        import pysrc.pydevd as pydevd
-    # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
-        pydevd.settrace('localhost', stdoutToServer=True, stderrToServer=True)
-    except ImportError:
-        sys.stderr.write("Error: " +
-            "You must add org.python.pydev.debug.pysrc to your PYTHONPATH.")
-        sys.exit(1)
-        
 # plugin related constants
 PLUGIN_URL = u'plugin://music/SoundCloud/'
 PLUGIN_ID = u'plugin.audio.soundcloud'
@@ -94,9 +72,19 @@ SETTING_USERNAME = u'username'
 SETTING_PASSWORD = u'password'
 SETTING_LOGIN = u'login_to_soundcloud'
 
+def _parameters_string_to_dict(parameters):
+    ''' Convert parameters encoded in a URL to a dict. '''
+    paramDict = {}
+    if parameters:
+        paramPairs = parameters[1:].split("&")
+        for paramsPair in paramPairs:
+            paramSplits = paramsPair.split('=')
+            if (len(paramSplits)) == 2:
+                paramDict[paramSplits[0]] = paramSplits[1]
+    return paramDict
 
 loginerror = False
-params = common.getParameters(sys.argv[2])
+params = _parameters_string_to_dict(sys.argv[2])
 url = urllib.unquote_plus(params.get(PARAMETER_KEY_URL, ""))
 name = urllib.unquote_plus(params.get("name", ""))
 mode = int(params.get(PARAMETER_KEY_MODE, "0"))
@@ -121,7 +109,6 @@ if login=="true" and oauth_token=="":
     #error login failed
     login="false"
     loginerror="true"
-    common.log("Login Failed", 2)
    
 
 def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=True, parameters={}, url=""):
@@ -242,8 +229,11 @@ def show_groups(groups, parameters):
 
 def _show_keyboard(default="", heading="", hidden=False):
     ''' Show the keyboard and return the text entered. '''
-    search = common.getUserInput(heading, default)
-    return search
+    keyboard = xbmc.Keyboard(default, heading, hidden)
+    keyboard.doModal()
+    if (keyboard.isConfirmed()):
+        return unicode(keyboard.getText(), "utf-8")
+    return default
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
