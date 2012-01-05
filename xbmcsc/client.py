@@ -30,10 +30,9 @@ dbg = True # Set to false if you don't want debugging
 dbglevel = 3 # Do NOT change from 3
 
 # SoundCloud application consumer key.
-CONSUMER_KEY = "91c61ef4dbc96933eff93325b5d5183e"
+CONSUMER_KEY = "hijuflqxoOqzLdtr6W4NA"
 CLIENT_ID_VALUE = CONSUMER_KEY
-CLIENT_SECRET_VALUE = "7d782a25f125696162a05f03d1a2df23"
-REDURI = "http://www.google.be"
+REDURI = "plugin://plugin.audio.soundcloud/oauth_callback"
 LOGINURL = "https://soundcloud.com/connect/login"
 
 GRANT_TYPE_PASSWORD_VALUE = u'password'
@@ -111,7 +110,7 @@ class SoundCloudClient(object):
         #params =
         #<form id="oauth2-login-form" class="authorize-client log-in existing-user authorize-token throbberform" method="post" action="/connect/login">
         #<input id="client_id" type="hidden" value="91c61ef4dbc96933eff93325b5d5183e" name="client_id">
-        #<input id="redirect_uri" type="hidden" value="http://www.google.be" name="redirect_uri">
+        #<input id="redirect_uri" type="hidden" value=""plugin://plugin.audio.soundcloud/oauth_callback"" name="redirect_uri">
         #<input id="response_type" type="hidden" value="token" name="response_type">
         #<input id="scope" type="hidden" value="non-expiring" name="scope">
         #<input id="display" type="hidden" value="popup" name="display">
