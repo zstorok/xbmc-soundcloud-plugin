@@ -51,6 +51,7 @@ MODE_TRACKS_HOTTEST = 14
 MODE_TRACK_PLAY = 15
 MODE_TRACKS_DASH = 16
 MODE_TRACKS_PRIVATE = 17
+MODE_TRACKS_OWN = 18
 
 MODE_USERS = 20
 MODE_USERS_MENU = 21
@@ -134,6 +135,7 @@ def show_tracks_menu():
         addDirectoryItem(name=LANGUAGE(2), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
         addDirectoryItem(name=LANGUAGE(6), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "dashboard", PARAMETER_KEY_MODE: MODE_TRACKS_DASH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
         addDirectoryItem(name=LANGUAGE(7), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+        addDirectoryItem(name=LANGUAGE(12), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "owntracks", PARAMETER_KEY_MODE: MODE_TRACKS_OWN, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(4), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(3), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -265,6 +267,9 @@ elif mode == MODE_TRACKS_HOTTEST:
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
 elif mode == MODE_TRACKS_FAVORITES:
     tracks = soundcloud_client.get_favorite_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
+    ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
+elif mode == MODE_TRACKS_OWN:
+    tracks = soundcloud_client.get_own_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url)
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL:url}, tracks=tracks)
 elif mode == MODE_TRACKS_DASH:
     tracks,nexturl = soundcloud_client.get_dash_tracks(int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, nexturl)
