@@ -11,11 +11,15 @@
 	<string id="8">You Follow</string>
 	<string id="9">Your Followers</string>
 	<string id="10">My Groups</string>
-	<string id="11">Users</string>
+	<string id="11">People</string>
 	<string id="12">Own Tracks</string>
+	<string id="13">You</string>
 		    
 	<!-- * Script Settings -->
     <string id="22">Logon on SoundCloud</string>
     <string id="23">User (email)</string>
     <string id="24">Password</string>
+
+	<!-- * Messages -->
+	<string id="31">Login Failed</string>
 </strings>

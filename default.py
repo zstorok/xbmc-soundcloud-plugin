@@ -62,6 +62,8 @@ MODE_USERS_TRACKS = 25
 MODE_USERS_FOLLOWINGS = 26
 MODE_USERS_FOLLOWERS = 27
 
+MODE_YOU = 28
+
 # Parameter keys
 PARAMETER_KEY_OFFSET = u'offset'
 PARAMETER_KEY_LIMIT = u'limit'
@@ -129,30 +131,38 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
     print(url)
     return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)
 
+def show_you_menu():
+    ''' Show the You menu. '''
+    if loginerror=="true":
+        xbmc.executebuiltin("Notification(%s,%s,%i)" % ("warning", LANGUAGE(31), 5000))
+        ADDON.openSettings()
+    else:
+        if login == 'true':
+            addDirectoryItem(name=LANGUAGE(6), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "dashboard", PARAMETER_KEY_MODE: MODE_TRACKS_DASH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(7), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(2), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(12), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "owntracks", PARAMETER_KEY_MODE: MODE_TRACKS_OWN, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(8), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(9), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            addDirectoryItem(name=LANGUAGE(10), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "mygroups", PARAMETER_KEY_MODE: MODE_GROUPS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
+            xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+        else:
+            ADDON.openSettings()
+
 def show_tracks_menu():
     ''' Show the Tracks menu. '''
-    if login == 'true':
-        addDirectoryItem(name=LANGUAGE(2), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "favorites", PARAMETER_KEY_MODE: MODE_TRACKS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
-        addDirectoryItem(name=LANGUAGE(6), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "dashboard", PARAMETER_KEY_MODE: MODE_TRACKS_DASH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
-        addDirectoryItem(name=LANGUAGE(7), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "private", PARAMETER_KEY_MODE: MODE_TRACKS_PRIVATE, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
-        addDirectoryItem(name=LANGUAGE(12), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "owntracks", PARAMETER_KEY_MODE: MODE_TRACKS_OWN, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(4), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/hottest", PARAMETER_KEY_MODE: MODE_TRACKS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(3), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "tracks/search", PARAMETER_KEY_MODE: MODE_TRACKS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_users_menu():
     ''' Show the Users menu. '''
-    if login == 'true':
-        addDirectoryItem(name=LANGUAGE(8), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followings", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWINGS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
-        addDirectoryItem(name=LANGUAGE(9), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "followers", PARAMETER_KEY_MODE: MODE_USERS_FOLLOWERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(4), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/hottest", PARAMETER_KEY_MODE: MODE_USERS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(3), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "users/search", PARAMETER_KEY_MODE: MODE_USERS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_groups_menu():
     ''' Show the Groups menu. '''
-    if login == 'true':
-        addDirectoryItem(name=LANGUAGE(10), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "mygroups", PARAMETER_KEY_MODE: MODE_GROUPS_FAVORITES, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(4), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/hottest", PARAMETER_KEY_MODE: MODE_GROUPS_HOTTEST, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(3), parameters={PARAMETER_KEY_URL: PLUGIN_URL + "groups/search", PARAMETER_KEY_MODE: MODE_GROUPS_SEARCH, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -241,6 +251,7 @@ def _show_keyboard(default="", heading="", hidden=False):
 
 def show_root_menu():
     ''' Show the plugin root menu. '''
+    addDirectoryItem(name=LANGUAGE(13), parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'you', PARAMETER_KEY_MODE: MODE_YOU, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(0), parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'groups', PARAMETER_KEY_MODE: MODE_GROUPS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(5), parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'tracks', PARAMETER_KEY_MODE: MODE_TRACKS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
     addDirectoryItem(name=LANGUAGE(11), parameters={PARAMETER_KEY_URL: PLUGIN_URL + 'users', PARAMETER_KEY_MODE: MODE_USERS, PARAMETER_KEY_TOKEN: oauth_token}, isFolder=True)
@@ -251,6 +262,8 @@ def show_root_menu():
 if not sys.argv[ 2 ] or not url:
     # new start
     ok = show_root_menu()
+elif mode == MODE_YOU:
+    ok = show_you_menu()
 elif mode == MODE_GROUPS:
     ok = show_groups_menu()
 elif mode == MODE_TRACKS:
@@ -312,8 +325,4 @@ elif mode == MODE_USERS_TRACKS:
     tracks = soundcloud_client.get_user_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, params.get("user_permalink"))
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
 elif mode == MODE_TRACK_PLAY:
-    play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))
-    
-if loginerror=="true":
-    xbmc.executebuiltin("Notification(%s,%s,%i)" % ("warning", "Login Failed", 5000))
-    
+    play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))    

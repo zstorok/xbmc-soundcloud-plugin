@@ -16,9 +16,13 @@
 	<string id="10">Моите групи</string>
 	<string id="11">Потребители</string>
 	<string id="12">Моите аудио записи</string>
-
+	<string id="13">You</string>
+	
 	<!-- * Script Settings -->
     <string id="22">Вписване в SoundCloud</string>
     <string id="23">Потребител (ел. поща)</string>
     <string id="24">Парола</string>
+
+	<!-- * Messages -->
+	<string id="31">Login Failed</string>    
 </strings>
