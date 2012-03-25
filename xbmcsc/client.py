@@ -195,7 +195,10 @@ class SoundCloudClient(object):
     
     def get_tracks(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of tracks from SoundCloud, based on the parameters. '''
-        url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        if query == "":
+            url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        else:
+            url = self._build_query_url(base="http://api.soundcloud.com/", resource_type="tracks", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
 
     def get_group_tracks(self, offset, limit, mode, plugin_url, group_id):
@@ -205,16 +208,16 @@ class SoundCloudClient(object):
 
     def get_user_tracks(self, offset, limit, mode, plugin_url, user_permalink):
         ''' Return a list of tracks uploaded by the given user, based on the specified parameters. '''
-        url = self._build_users_query_url(base='http://api.soundcloud.com/', resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        url = self._build_users_query_url(base='http://api.soundcloud.com/', resource_type="tracks", user_permalink=user_permalink, parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_tracks(url)
 
     def get_normal_groups(self, offset, limit, mode, plugin_url, query=""):
         ''' Return a list of groups, based on the specified parameters. '''
-        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
+        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="groups", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_ORDER: "hotness"})
         return self._get_groups(url)
             
     def get_users(self, offset, limit, mode, plugin_url, query=""):
-        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_FILTER: TRACK_STREAMABLE, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
+        url = self._build_query_url(base='http://api.soundcloud.com/', resource_type="users", parameters={ QUERY_CONSUMER_KEY: CONSUMER_KEY, QUERY_OFFSET: offset, QUERY_LIMIT: limit, QUERY_Q: query, QUERY_ORDER: "hotness"})
         return self._get_users(url)
 
     def _get_groups(self, url):
@@ -290,5 +293,3 @@ class SoundCloudClient(object):
             raise RuntimeError('Authentication error')
         
         return json.loads(content)
-
-    

@@ -128,7 +128,6 @@ def addDirectoryItem(name, label2='', infoType="Music", infoLabels={}, isFolder=
     else:
         #activities next url
         url = sys.argv[0] + '?' + urllib.urlencode(parameters) + '&' + "nexturl=" + url
-    print(url)
     return xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=li, isFolder=isFolder)
 
 def show_you_menu():
@@ -184,6 +183,8 @@ def show_tracks(tracks, parameters={}):
     if not len(tracks) < parameters[PARAMETER_KEY_LIMIT]:
         modified_parameters = parameters.copy()
         modified_parameters[PARAMETER_KEY_OFFSET] = str(int(parameters[PARAMETER_KEY_OFFSET]) + int(parameters[PARAMETER_KEY_LIMIT]))
+        if params.get("user_permalink") != "":
+            modified_parameters["user_permalink"] = params.get("user_permalink")
         addDirectoryItem(name="More...", parameters=modified_parameters, isFolder=True)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
@@ -325,4 +326,4 @@ elif mode == MODE_USERS_TRACKS:
     tracks = soundcloud_client.get_user_tracks(int(params.get(PARAMETER_KEY_OFFSET, "0")), int(params.get(PARAMETER_KEY_LIMIT, "50")), mode, url, params.get("user_permalink"))
     ok = show_tracks(parameters={PARAMETER_KEY_OFFSET: int(params.get(PARAMETER_KEY_OFFSET, "0")), PARAMETER_KEY_LIMIT: int(params.get(PARAMETER_KEY_LIMIT, "50")), PARAMETER_KEY_MODE: mode, PARAMETER_KEY_URL: url}, tracks=tracks)
 elif mode == MODE_TRACK_PLAY:
-    play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))    
+    play_track(params.get(PARAMETER_KEY_PERMALINK, "1"))
